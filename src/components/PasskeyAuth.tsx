@@ -3,7 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Fingerprint } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
-const PasskeyAuth = () => {
+interface PasskeyAuthProps {
+  onSuccess?: () => void;
+}
+
+const PasskeyAuth = ({ onSuccess }: PasskeyAuthProps) => {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const { toast } = useToast();
 
@@ -17,6 +21,7 @@ const PasskeyAuth = () => {
         description: "Welcome back to your wallet!",
         duration: 3000,
       });
+      onSuccess?.();
     } catch (error) {
       toast({
         title: "Authentication Failed",
