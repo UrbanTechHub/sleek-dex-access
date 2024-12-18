@@ -2,8 +2,51 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ArrowRightLeft, Wallet, History } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const WalletDashboard = () => {
+  const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleConnectWallet = async () => {
+    setIsConnecting(true);
+    try {
+      // Check if MetaMask is installed
+      if (typeof window.ethereum !== 'undefined') {
+        // Request account access
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts.length > 0) {
+          setIsConnected(true);
+          toast.success("Wallet connected successfully!");
+        }
+      } else {
+        toast.error("Please install MetaMask to connect your wallet");
+      }
+    } catch (error) {
+      toast.error("Failed to connect wallet");
+      console.error(error);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleSendReceive = () => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+    toast.info("Send/Receive feature coming soon");
+  };
+
+  const handleViewHistory = () => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+    toast.info("Transaction history feature coming soon");
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -11,9 +54,13 @@ const WalletDashboard = () => {
           <h1 className="text-3xl font-bold">Wallet Dashboard</h1>
           <p className="text-muted-foreground">Manage your crypto assets and transactions</p>
         </div>
-        <Button className="w-full md:w-auto">
+        <Button 
+          className="w-full md:w-auto" 
+          onClick={handleConnectWallet}
+          disabled={isConnecting || isConnected}
+        >
           <Wallet className="mr-2 h-4 w-4" />
-          Connect Wallet
+          {isConnecting ? "Connecting..." : isConnected ? "Connected" : "Connect Wallet"}
         </Button>
       </div>
 
@@ -48,11 +95,19 @@ const WalletDashboard = () => {
             <CardDescription>Common operations</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button variant="outline" className="w-full justify-start">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={handleSendReceive}
+            >
               <ArrowRightLeft className="mr-2 h-4 w-4" />
               Send / Receive
             </Button>
-            <Button variant="outline" className="w-full justify-start">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={handleViewHistory}
+            >
               <History className="mr-2 h-4 w-4" />
               View History
             </Button>
