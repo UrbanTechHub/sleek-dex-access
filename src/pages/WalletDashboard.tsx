@@ -1,20 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowRightLeft, Wallet, History } from "lucide-react";
+import { ArrowRightLeft, Wallet, History, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ethers } from "ethers";
 
 const WalletDashboard = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [generatedWallet, setGeneratedWallet] = useState<{
+    address: string;
+    privateKey: string;
+  } | null>(null);
 
   const handleConnectWallet = async () => {
     setIsConnecting(true);
     try {
-      // Check if MetaMask is installed
       if (typeof window.ethereum !== 'undefined') {
-        // Request account access
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         if (accounts.length > 0) {
           setIsConnected(true);
@@ -28,6 +31,20 @@ const WalletDashboard = () => {
       console.error(error);
     } finally {
       setIsConnecting(false);
+    }
+  };
+
+  const handleGenerateWallet = () => {
+    try {
+      const wallet = ethers.Wallet.createRandom();
+      setGeneratedWallet({
+        address: wallet.address,
+        privateKey: wallet.privateKey,
+      });
+      toast.success("New wallet generated successfully!");
+    } catch (error) {
+      toast.error("Failed to generate wallet");
+      console.error(error);
     }
   };
 
@@ -54,15 +71,47 @@ const WalletDashboard = () => {
           <h1 className="text-3xl font-bold">Wallet Dashboard</h1>
           <p className="text-muted-foreground">Manage your crypto assets and transactions</p>
         </div>
-        <Button 
-          className="w-full md:w-auto" 
-          onClick={handleConnectWallet}
-          disabled={isConnecting || isConnected}
-        >
-          <Wallet className="mr-2 h-4 w-4" />
-          {isConnecting ? "Connecting..." : isConnected ? "Connected" : "Connect Wallet"}
-        </Button>
+        <div className="flex gap-2 w-full md:w-auto">
+          <Button 
+            className="flex-1 md:flex-none" 
+            onClick={handleConnectWallet}
+            disabled={isConnecting || isConnected}
+          >
+            <Wallet className="mr-2 h-4 w-4" />
+            {isConnecting ? "Connecting..." : isConnected ? "Connected" : "Connect Wallet"}
+          </Button>
+          <Button
+            className="flex-1 md:flex-none"
+            onClick={handleGenerateWallet}
+            variant="outline"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Generate New Wallet
+          </Button>
+        </div>
       </div>
+
+      {generatedWallet && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Generated Wallet</CardTitle>
+            <CardDescription>Store these details securely</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="font-semibold">Address:</p>
+              <p className="font-mono text-sm break-all">{generatedWallet.address}</p>
+            </div>
+            <div>
+              <p className="font-semibold">Private Key:</p>
+              <p className="font-mono text-sm break-all">{generatedWallet.privateKey}</p>
+            </div>
+            <p className="text-sm text-red-500">
+              Important: Save your private key securely. Never share it with anyone!
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
