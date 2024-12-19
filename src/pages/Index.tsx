@@ -1,11 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wallet, Key, ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Wallet, Key } from "lucide-react";
 import PasskeyAuth from "@/components/PasskeyAuth";
+import { useState } from "react";
 
 const Index = () => {
-  const navigate = useNavigate();
+  const [mode, setMode] = useState<'login' | 'create'>('login');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-4 sm:p-6 md:p-8">
@@ -20,39 +20,38 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
+          <div className="w-full max-w-md">
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Wallet className="h-6 w-6 text-purple-600" />
-                  Access Wallet
+                  {mode === 'login' ? (
+                    <>
+                      <Key className="h-6 w-6 text-purple-600" />
+                      Login to Wallet
+                    </>
+                  ) : (
+                    <>
+                      <Wallet className="h-6 w-6 text-indigo-600" />
+                      Create New Wallet
+                    </>
+                  )}
                 </CardTitle>
                 <CardDescription>
-                  Securely access your existing wallet
+                  {mode === 'login' 
+                    ? "Access your existing wallet securely" 
+                    : "Set up a new wallet with passkey protection"}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <PasskeyAuth />
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Key className="h-6 w-6 text-indigo-600" />
-                  Create New Wallet
-                </CardTitle>
-                <CardDescription>
-                  Set up a new wallet with passkey protection
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <PasskeyAuth mode={mode} />
                 <Button 
-                  onClick={() => navigate("/create-wallet")} 
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={() => setMode(mode === 'login' ? 'create' : 'login')}
                 >
-                  Get Started
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  {mode === 'login' 
+                    ? "Don't have a wallet? Create one" 
+                    : "Already have a wallet? Login"}
                 </Button>
               </CardContent>
             </Card>

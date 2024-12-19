@@ -4,16 +4,18 @@ import { Fingerprint, KeyRound } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PasskeyAuthProps {
-  onSuccess?: () => void;
+  mode: 'login' | 'create';
 }
 
-const PasskeyAuth = ({ onSuccess }: PasskeyAuthProps) => {
+const PasskeyAuth = ({ mode }: PasskeyAuthProps) => {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authMethod, setAuthMethod] = useState<'biometric' | 'pin'>('biometric');
   const [pin, setPin] = useState("");
   const { toast } = useToast();
+  const { login, createAccount } = useAuth();
 
   const handleBiometricAuth = async () => {
     setIsAuthenticating(true);
@@ -51,14 +53,15 @@ const PasskeyAuth = ({ onSuccess }: PasskeyAuthProps) => {
         const credential = await navigator.credentials.create({
           publicKey: publicKeyCredentialCreationOptions
         });
-
+        
         if (credential) {
-          toast({
-            title: "Biometric Authentication Successful",
-            description: "Welcome back to your wallet!",
-            duration: 3000,
-          });
-          onSuccess?.();
+          // Use a default PIN for biometric authentication
+          const defaultPin = '123456';
+          if (mode === 'create') {
+            await createAccount(defaultPin);
+          } else {
+            await login(defaultPin);
+          }
         }
       } else {
         throw new Error("Web Authentication API not supported");
@@ -77,7 +80,7 @@ const PasskeyAuth = ({ onSuccess }: PasskeyAuthProps) => {
     }
   };
 
-  const handlePinAuth = () => {
+  const handlePinAuth = async () => {
     if (pin.length < 6) {
       toast({
         title: "Invalid PIN",
@@ -88,14 +91,21 @@ const PasskeyAuth = ({ onSuccess }: PasskeyAuthProps) => {
       return;
     }
 
-    // Here you would typically validate against a stored PIN
-    // For demo purposes, we'll accept any valid PIN
-    toast({
-      title: "PIN Authentication Successful",
-      description: "Welcome back to your wallet!",
-      duration: 3000,
-    });
-    onSuccess?.();
+    try {
+      if (mode === 'create') {
+        await createAccount(pin);
+      } else {
+        await login(pin);
+      }
+    } catch (error) {
+      console.error("PIN authentication error:", error);
+      toast({
+        title: "Authentication Failed",
+        description: "Please try again",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
   return (
@@ -109,7 +119,7 @@ const PasskeyAuth = ({ onSuccess }: PasskeyAuthProps) => {
               className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
             >
               <Fingerprint className="mr-2 h-4 w-4" />
-              {isAuthenticating ? "Authenticating..." : "Use Biometric Authentication"}
+              {isAuthenticating ? "Authenticating..." : `Use Biometric ${mode === 'create' ? 'Registration' : 'Authentication'}`}
             </Button>
             <Button
               variant="outline"
@@ -134,7 +144,7 @@ const PasskeyAuth = ({ onSuccess }: PasskeyAuthProps) => {
               className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
             >
               <KeyRound className="mr-2 h-4 w-4" />
-              Authenticate with PIN
+              {mode === 'create' ? 'Create Account' : 'Login'} with PIN
             </Button>
             <Button
               variant="outline"
