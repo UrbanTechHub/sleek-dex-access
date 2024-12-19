@@ -8,9 +8,10 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface PasskeyAuthProps {
   mode: 'login' | 'create';
+  onSuccess?: () => void;  // Added this prop
 }
 
-const PasskeyAuth = ({ mode }: PasskeyAuthProps) => {
+const PasskeyAuth = ({ mode, onSuccess }: PasskeyAuthProps) => {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authMethod, setAuthMethod] = useState<'biometric' | 'pin'>('biometric');
   const [pin, setPin] = useState("");
@@ -60,6 +61,7 @@ const PasskeyAuth = ({ mode }: PasskeyAuthProps) => {
           } else {
             await login(defaultPin);
           }
+          onSuccess?.(); // Call onSuccess if provided
         }
       } else {
         throw new Error("Web Authentication API not supported");
@@ -95,6 +97,7 @@ const PasskeyAuth = ({ mode }: PasskeyAuthProps) => {
       } else {
         await login(pin);
       }
+      onSuccess?.(); // Call onSuccess if provided
     } catch (error) {
       console.error("PIN authentication error:", error);
       toast({

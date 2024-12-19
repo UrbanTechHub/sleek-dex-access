@@ -46,7 +46,7 @@ const CreateWallet = () => {
         </CardHeader>
         <CardContent>
           {step === 'auth' ? (
-            <PasskeyAuth onSuccess={handleAuthSuccess} />
+            <PasskeyAuth mode="create" onSuccess={handleAuthSuccess} />
           ) : (
             <div className="space-y-4">
               <div className="space-y-2">
