@@ -18,31 +18,53 @@ const PasskeyAuth = ({ onSuccess }: PasskeyAuthProps) => {
   const handleBiometricAuth = async () => {
     setIsAuthenticating(true);
     try {
-      if ('FaceID' in navigator || 'TouchID' in navigator) {
-        // Using Web Authentication API
-        const publicKey = {
-          challenge: new Uint8Array(32),
-          rp: { name: 'Secure DEX Wallet' },
+      if ('credentials' in navigator) {
+        // Generating cryptographically secure random values
+        const challenge = crypto.getRandomValues(new Uint8Array(32));
+        const userId = crypto.getRandomValues(new Uint8Array(16));
+
+        const publicKeyCredentialCreationOptions: PublicKeyCredentialCreationOptions = {
+          challenge,
+          rp: { 
+            name: 'Secure DEX Wallet',
+            id: window.location.hostname
+          },
           user: {
-            id: new Uint8Array(16),
+            id: userId,
             name: 'user@example.com',
             displayName: 'Wallet User',
           },
-          pubKeyCredParams: [{alg: -7, type: 'public-key'}],
+          pubKeyCredParams: [
+            {
+              type: 'public-key',
+              alg: -7 // ES256 algorithm
+            }
+          ],
+          authenticatorSelection: {
+            authenticatorAttachment: 'platform',
+            userVerification: 'preferred'
+          },
           timeout: 60000,
+          attestation: 'none'
         };
 
-        await navigator.credentials.create({ publicKey });
-        toast({
-          title: "Biometric Authentication Successful",
-          description: "Welcome back to your wallet!",
-          duration: 3000,
+        const credential = await navigator.credentials.create({
+          publicKey: publicKeyCredentialCreationOptions
         });
-        onSuccess?.();
+
+        if (credential) {
+          toast({
+            title: "Biometric Authentication Successful",
+            description: "Welcome back to your wallet!",
+            duration: 3000,
+          });
+          onSuccess?.();
+        }
       } else {
-        throw new Error("Biometric authentication not supported");
+        throw new Error("Web Authentication API not supported");
       }
     } catch (error) {
+      console.error("Biometric authentication error:", error);
       toast({
         title: "Authentication Failed",
         description: "Please try again or use PIN",
