@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Send, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import WalletInfo from "@/components/WalletInfo";
 import TransactionHistory, { Transaction } from "@/components/TransactionHistory";
@@ -15,29 +15,34 @@ const WalletDashboard = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // Automatically generate wallets on component mount if none exist
   useEffect(() => {
-    // Load stored wallets and transactions from localStorage
     const savedWallets = localStorage.getItem('wallets');
     const savedTransactions = localStorage.getItem('transactions');
     
     if (savedWallets) {
       setWallets(JSON.parse(savedWallets));
+    } else {
+      // Generate wallets for all supported networks automatically
+      generateInitialWallets();
     }
+    
     if (savedTransactions) {
       setTransactions(JSON.parse(savedTransactions));
     }
   }, []);
 
-  const handleGenerateWallet = async (network: typeof SUPPORTED_NETWORKS[number]) => {
+  const generateInitialWallets = async () => {
     setIsGenerating(true);
     try {
-      const newWallet = await generateWallet(network);
-      const updatedWallets = [...wallets, newWallet];
-      setWallets(updatedWallets);
-      localStorage.setItem('wallets', JSON.stringify(updatedWallets));
-      toast.success(`New ${network} wallet generated successfully!`);
+      const newWallets = await Promise.all(
+        SUPPORTED_NETWORKS.map(network => generateWallet(network))
+      );
+      setWallets(newWallets);
+      localStorage.setItem('wallets', JSON.stringify(newWallets));
+      toast.success("Wallets generated successfully!");
     } catch (error) {
-      toast.error(`Failed to generate ${network} wallet`);
+      toast.error("Failed to generate wallets");
       console.error(error);
     } finally {
       setIsGenerating(false);
@@ -98,15 +103,17 @@ const WalletDashboard = () => {
               <CardTitle>{network} Total Balance</CardTitle>
               <CardDescription>{getTotalBalance(network)} {network}</CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button
-                className="w-full"
-                onClick={() => handleGenerateWallet(network)}
-                disabled={isGenerating}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Generate {network} Wallet
-              </Button>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Button className="flex-1" variant="outline">
+                  <Send className="mr-2 h-4 w-4" />
+                  Send
+                </Button>
+                <Button className="flex-1" variant="outline">
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Receive
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
