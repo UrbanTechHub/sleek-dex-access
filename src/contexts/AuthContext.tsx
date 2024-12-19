@@ -4,12 +4,13 @@ import { toast } from 'sonner';
 import { generateWallet } from '@/utils/walletUtils';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client with environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Supabase credentials
+const supabaseUrl = 'https://weeatsonmgbshxrpiaso.supabase.co';
+const supabaseKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlZWF0c29ubWdic2h4cnBpYXNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ2MDYyNTQsImV4cCI6MjA1MDE4MjI1NH0.2SXYojF_InZR4yBzzIIWfj6Is9tfmB7KOk0KMTMmkEA';
 
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase environment variables. Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.');
+  throw new Error('Missing Supabase environment variables.');
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -48,14 +49,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         fetchUserData(session.user.id);
       }
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -88,11 +87,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const createAccount = async (pin: string) => {
     try {
-      // Generate a random email since we're using PIN authentication
       const email = `${crypto.randomUUID()}@temp.com`;
-      const password = crypto.randomUUID(); // Random password since we're using PIN
+      const password = crypto.randomUUID();
 
-      // Create auth user in Supabase
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -100,7 +97,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (authError) throw authError;
 
-      // Generate wallets
       const ethWallet = await generateWallet('ETH');
       const solWallet = await generateWallet('SOL');
       const usdtWallet = await generateWallet('USDT');
@@ -108,10 +104,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const newUser: Omit<User, 'id'> = {
         pin,
         wallets: [ethWallet, solWallet, usdtWallet],
-        transactions: []
+        transactions: [],
       };
 
-      // Store user data in Supabase
       const { error: dbError } = await supabase
         .from('users')
         .insert([{ id: authData.user?.id, ...newUser }]);
@@ -129,7 +124,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (pin: string) => {
     try {
-      // Query users table by PIN
       const { data, error } = await supabase
         .from('users')
         .select('*')
