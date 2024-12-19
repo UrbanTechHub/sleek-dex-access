@@ -21,7 +21,6 @@ const PasskeyAuth = ({ mode }: PasskeyAuthProps) => {
     setIsAuthenticating(true);
     try {
       if ('credentials' in navigator) {
-        // Generating cryptographically secure random values
         const challenge = crypto.getRandomValues(new Uint8Array(32));
         const userId = crypto.getRandomValues(new Uint8Array(16));
 
@@ -39,7 +38,7 @@ const PasskeyAuth = ({ mode }: PasskeyAuthProps) => {
           pubKeyCredParams: [
             {
               type: 'public-key',
-              alg: -7 // ES256 algorithm
+              alg: -7
             }
           ],
           authenticatorSelection: {
@@ -55,7 +54,6 @@ const PasskeyAuth = ({ mode }: PasskeyAuthProps) => {
         });
         
         if (credential) {
-          // Use a default PIN for biometric authentication
           const defaultPin = '123456';
           if (mode === 'create') {
             await createAccount(defaultPin);

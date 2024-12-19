@@ -2,6 +2,12 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { generateWallet } from '@/utils/walletUtils';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 interface User {
   id: string;
@@ -37,28 +43,77 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        fetchUserData(session.user.id);
+      }
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        fetchUserData(session.user.id);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserData = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      toast.error('Error fetching user data');
+      return;
+    }
+
+    if (data) {
+      setUser(data as User);
+    }
+  };
 
   const createAccount = async (pin: string) => {
     try {
-      // Generate wallets for each network
+      // Generate a random email since we're using PIN authentication
+      const email = `${crypto.randomUUID()}@temp.com`;
+      const password = crypto.randomUUID(); // Random password since we're using PIN
+
+      // Create auth user in Supabase
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (authError) throw authError;
+
+      // Generate wallets
       const ethWallet = await generateWallet('ETH');
       const solWallet = await generateWallet('SOL');
       const usdtWallet = await generateWallet('USDT');
 
-      const newUser: User = {
-        id: crypto.randomUUID(),
+      const newUser: Omit<User, 'id'> = {
         pin,
         wallets: [ethWallet, solWallet, usdtWallet],
         transactions: []
       };
 
-      localStorage.setItem('user', JSON.stringify(newUser));
-      setUser(newUser);
+      // Store user data in Supabase
+      const { error: dbError } = await supabase
+        .from('users')
+        .insert([{ id: authData.user?.id, ...newUser }]);
+
+      if (dbError) throw dbError;
+
+      await fetchUserData(authData.user!.id);
       toast.success('Account created successfully!');
       navigate('/wallet-dashboard');
     } catch (error) {
@@ -68,24 +123,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const login = async (pin: string) => {
-    const savedUser = localStorage.getItem('user');
-    if (!savedUser) {
-      toast.error('No account found');
-      return;
-    }
+    try {
+      // Query users table by PIN
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('pin', pin)
+        .single();
 
-    const parsedUser = JSON.parse(savedUser);
-    if (parsedUser.pin !== pin) {
-      toast.error('Invalid PIN');
-      return;
-    }
+      if (error || !data) {
+        toast.error('Invalid PIN');
+        return;
+      }
 
-    setUser(parsedUser);
-    toast.success('Login successful!');
-    navigate('/wallet-dashboard');
+      setUser(data as User);
+      toast.success('Login successful!');
+      navigate('/wallet-dashboard');
+    } catch (error) {
+      toast.error('Login failed');
+      console.error(error);
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
     navigate('/');
   };
