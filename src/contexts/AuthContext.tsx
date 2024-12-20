@@ -4,16 +4,10 @@ import { toast } from 'sonner';
 import { generateWallet } from '@/utils/walletUtils';
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase credentials
-const supabaseUrl = 'https://weeatsonmgbshxrpiaso.supabase.co';
-const supabaseKey =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlZWF0c29ubWdic2h4cnBpYXNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ2MDYyNTQsImV4cCI6MjA1MDE4MjI1NH0.2SXYojF_InZR4yBzzIIWfj6Is9tfmB7KOk0KMTMmkEA';
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase environment variables.');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 interface User {
   id: string;
