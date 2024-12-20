@@ -1,12 +1,13 @@
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import { useAuthOperations } from '@/hooks/useAuthOperations';
-import type { AuthContextType } from '@/types/auth';
+import type { AuthContextType, User } from '@/types/auth';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user, login, logout, createAccount, fetchUserData } = useAuthOperations();
+  const { user: initialUser, login, logout, createAccount, fetchUserData } = useAuthOperations();
+  const [user, setUser] = useState<User | null>(initialUser);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -28,7 +29,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (session?.user) {
         await fetchUserData(session.user.id);
       } else {
-        user = null;
+        setUser(null);
       }
     });
 
