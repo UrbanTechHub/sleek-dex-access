@@ -4,17 +4,16 @@ import { toast } from 'sonner';
 import { generateWallet } from '@/utils/walletUtils';
 import { createClient } from '@supabase/supabase-js';
 
-// Validate environment variables
+// Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error(
-    'Missing Supabase environment variables. Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in your environment.'
-  );
+  console.error('Missing Supabase environment variables');
+  toast.error('Configuration error. Please check console.');
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 interface User {
   id: string;
@@ -50,17 +49,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        fetchUserData(session.user.id);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          await fetchUserData(session.user.id);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        toast.error('Failed to initialize authentication');
       }
-    });
+    };
+
+    initializeAuth();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        fetchUserData(session.user.id);
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        await fetchUserData(session.user.id);
       } else {
         setUser(null);
       }
@@ -77,16 +84,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('id', userId)
         .single();
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       if (data) {
         setUser(data as User);
       }
     } catch (error) {
-      toast.error('Error fetching user data');
       console.error('Error fetching user data:', error);
+      toast.error('Error fetching user data');
     }
   };
 
@@ -123,8 +128,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       toast.success('Account created successfully!');
       navigate('/wallet-dashboard');
     } catch (error) {
-      toast.error('Failed to create account');
       console.error('Account creation error:', error);
+      toast.error('Failed to create account');
     }
   };
 
@@ -145,8 +150,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       toast.success('Login successful!');
       navigate('/wallet-dashboard');
     } catch (error) {
-      toast.error('Login failed');
       console.error('Login error:', error);
+      toast.error('Login failed');
     }
   };
 
@@ -156,8 +161,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(null);
       navigate('/');
     } catch (error) {
-      toast.error('Logout failed');
       console.error('Logout error:', error);
+      toast.error('Logout failed');
     }
   };
 
