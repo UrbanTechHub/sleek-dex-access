@@ -4,10 +4,17 @@ import { toast } from 'sonner';
 import { generateWallet } from '@/utils/walletUtils';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+// Validate environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    'Missing Supabase environment variables. Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in your environment.'
+  );
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface User {
   id: string;
@@ -63,19 +70,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const fetchUserData = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    if (error) {
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        setUser(data as User);
+      }
+    } catch (error) {
       toast.error('Error fetching user data');
-      return;
-    }
-
-    if (data) {
-      setUser(data as User);
+      console.error('Error fetching user data:', error);
     }
   };
 
@@ -90,6 +101,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       if (authError) throw authError;
+      if (!authData.user) throw new Error('No user returned from auth signup');
 
       const ethWallet = await generateWallet('ETH');
       const solWallet = await generateWallet('SOL');
@@ -103,16 +115,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       const { error: dbError } = await supabase
         .from('users')
-        .insert([{ id: authData.user?.id, ...newUser }]);
+        .insert([{ id: authData.user.id, ...newUser }]);
 
       if (dbError) throw dbError;
 
-      await fetchUserData(authData.user!.id);
+      await fetchUserData(authData.user.id);
       toast.success('Account created successfully!');
       navigate('/wallet-dashboard');
     } catch (error) {
       toast.error('Failed to create account');
-      console.error(error);
+      console.error('Account creation error:', error);
     }
   };
 
@@ -134,14 +146,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       navigate('/wallet-dashboard');
     } catch (error) {
       toast.error('Login failed');
-      console.error(error);
+      console.error('Login error:', error);
     }
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    navigate('/');
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      navigate('/');
+    } catch (error) {
+      toast.error('Logout failed');
+      console.error('Logout error:', error);
+    }
   };
 
   return (
