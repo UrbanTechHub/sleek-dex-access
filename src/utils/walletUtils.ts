@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 
 export interface WalletData {
   id: string;
@@ -25,12 +25,18 @@ export const generateWallet = async (network: 'ETH' | 'SOL' | 'USDT'): Promise<W
       };
     }
     case 'SOL': {
-      const keypair = Keypair.generate();
+      // Generate random bytes for the keypair
+      const randomBytes = new Uint8Array(32);
+      crypto.getRandomValues(randomBytes);
+      
+      // Create keypair from the random bytes
+      const keypair = Keypair.fromSeed(randomBytes);
+      
       return {
         id: crypto.randomUUID(),
         network,
         address: keypair.publicKey.toString(),
-        privateKey: Buffer.from(keypair.secretKey).toString('hex'),
+        privateKey: Array.from(keypair.secretKey).join(','), // Store as comma-separated string
         balance: '0',
         lastUpdated: new Date(),
       };
