@@ -1,63 +1,37 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { supabase } from '@/utils/supabase';
 import { generateWallet } from '@/utils/walletUtils';
+import { storage } from '@/utils/localStorage';
 import type { User } from '@/types/auth';
 
 export const useAuthOperations = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(storage.getUser());
   const navigate = useNavigate();
 
   const fetchUserData = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) throw error;
-
-      if (data) {
-        setUser(data as User);
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      toast.error('Error fetching user data');
+    const storedUser = storage.getUser();
+    if (storedUser && storedUser.id === userId) {
+      setUser(storedUser);
     }
   };
 
   const createAccount = async (pin: string) => {
     try {
-      const email = `${crypto.randomUUID()}@temp.com`;
-      const password = crypto.randomUUID();
-
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('No user returned from auth signup');
-
+      const userId = crypto.randomUUID();
       const ethWallet = await generateWallet('ETH');
       const solWallet = await generateWallet('SOL');
       const usdtWallet = await generateWallet('USDT');
 
-      const newUser: Omit<User, 'id'> = {
+      const newUser: User = {
+        id: userId,
         pin,
         wallets: [ethWallet, solWallet, usdtWallet],
         transactions: [],
       };
 
-      const { error: dbError } = await supabase
-        .from('users')
-        .insert([{ id: authData.user.id, ...newUser }]);
-
-      if (dbError) throw dbError;
-
-      await fetchUserData(authData.user.id);
+      storage.setUser(newUser);
+      setUser(newUser);
       toast.success('Account created successfully!');
       navigate('/wallet-dashboard');
     } catch (error) {
@@ -68,20 +42,14 @@ export const useAuthOperations = () => {
 
   const login = async (pin: string) => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('pin', pin)
-        .single();
-
-      if (error || !data) {
+      const storedUser = storage.getUser();
+      if (storedUser && storedUser.pin === pin) {
+        setUser(storedUser);
+        toast.success('Login successful!');
+        navigate('/wallet-dashboard');
+      } else {
         toast.error('Invalid PIN');
-        return;
       }
-
-      setUser(data as User);
-      toast.success('Login successful!');
-      navigate('/wallet-dashboard');
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Login failed');
@@ -90,7 +58,7 @@ export const useAuthOperations = () => {
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      storage.removeUser();
       setUser(null);
       navigate('/');
     } catch (error) {
