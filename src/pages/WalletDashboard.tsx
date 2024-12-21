@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, RefreshCw, Send, Wallet } from "lucide-react";
+import { Plus, RefreshCw, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import WalletInfo from "@/components/WalletInfo";
 import TransactionHistory, { Transaction } from "@/components/TransactionHistory";
 import { WalletData, generateWallet, updateWalletBalance } from "@/utils/walletUtils";
+import SendTokenDialog from "@/components/SendTokenDialog";
 
 const SUPPORTED_NETWORKS = ['ETH', 'SOL', 'USDT'] as const;
 
@@ -15,7 +16,6 @@ const WalletDashboard = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Automatically generate wallets on component mount if none exist
   useEffect(() => {
     const savedWallets = localStorage.getItem('wallets');
     const savedTransactions = localStorage.getItem('transactions');
@@ -23,7 +23,6 @@ const WalletDashboard = () => {
     if (savedWallets) {
       setWallets(JSON.parse(savedWallets));
     } else {
-      // Generate wallets for all supported networks automatically
       generateInitialWallets();
     }
     
@@ -70,6 +69,44 @@ const WalletDashboard = () => {
     }
   };
 
+  const handleSendTransaction = (wallet: WalletData) => async (amount: string, recipient: string) => {
+    try {
+      // Create a new transaction
+      const newTransaction: Transaction = {
+        id: crypto.randomUUID(),
+        type: 'send',
+        amount,
+        from: wallet.address,
+        to: recipient,
+        network: wallet.network,
+        timestamp: new Date().toISOString(),
+        status: 'completed'
+      };
+
+      // Update wallet balance
+      const updatedWallets = wallets.map(w => {
+        if (w.id === wallet.id) {
+          return {
+            ...w,
+            balance: (Number(w.balance) - Number(amount)).toString()
+          };
+        }
+        return w;
+      });
+
+      // Update state and localStorage
+      setWallets(updatedWallets);
+      setTransactions([newTransaction, ...transactions]);
+      localStorage.setItem('wallets', JSON.stringify(updatedWallets));
+      localStorage.setItem('transactions', JSON.stringify([newTransaction, ...transactions]));
+
+      toast.success(`Successfully sent ${amount} ${wallet.network}`);
+    } catch (error) {
+      console.error('Transaction error:', error);
+      toast.error('Failed to send transaction');
+    }
+  };
+
   const getTotalBalance = (network: typeof SUPPORTED_NETWORKS[number]) => {
     return wallets
       .filter(w => w.network === network)
@@ -105,10 +142,12 @@ const WalletDashboard = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
-                <Button className="flex-1" variant="outline">
-                  <Send className="mr-2 h-4 w-4" />
-                  Send
-                </Button>
+                {wallets.find(w => w.network === network) && (
+                  <SendTokenDialog
+                    wallet={wallets.find(w => w.network === network)!}
+                    onSend={handleSendTransaction(wallets.find(w => w.network === network)!)}
+                  />
+                )}
                 <Button className="flex-1" variant="outline">
                   <Wallet className="mr-2 h-4 w-4" />
                   Receive
