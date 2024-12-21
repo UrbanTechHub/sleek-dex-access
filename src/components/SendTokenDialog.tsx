@@ -17,9 +17,28 @@ const SendTokenDialog = ({ wallet, onSend }: SendTokenDialogProps) => {
   const [recipient, setRecipient] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
+  const validateAddress = (address: string) => {
+    switch (wallet.network) {
+      case 'BTC':
+        // Basic Bitcoin address validation (starts with 1, 3, or bc1)
+        return /^(1|3|bc1)[a-zA-Z0-9]{25,62}$/.test(address);
+      case 'TON':
+        // Basic TON address validation (64 characters)
+        return /^[a-zA-Z0-9]{48}$/.test(address);
+      default:
+        // ETH/USDT address validation (0x followed by 40 hex characters)
+        return /^0x[a-fA-F0-9]{40}$/.test(address);
+    }
+  };
+
   const handleSend = () => {
     if (!amount || !recipient) {
       toast.error("Please fill in all fields");
+      return;
+    }
+
+    if (!validateAddress(recipient)) {
+      toast.error(`Invalid ${wallet.network} address format`);
       return;
     }
 
@@ -56,7 +75,7 @@ const SendTokenDialog = ({ wallet, onSend }: SendTokenDialogProps) => {
             <Label htmlFor="amount">Amount</Label>
             <Input
               id="amount"
-              placeholder="0.0"
+              placeholder={`0.0 ${wallet.network}`}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
@@ -65,7 +84,7 @@ const SendTokenDialog = ({ wallet, onSend }: SendTokenDialogProps) => {
             <Label htmlFor="recipient">Recipient Address</Label>
             <Input
               id="recipient"
-              placeholder="Enter recipient address"
+              placeholder={`Enter ${wallet.network} address`}
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
             />

@@ -10,7 +10,7 @@ import {
 import { ArrowDownToLine, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { WalletData } from "@/utils/walletUtils";
-import { QRCodeSVG } from "qrcode.react"; // Changed from default import to named import
+import { QRCodeSVG } from "qrcode.react";
 
 interface ReceiveDialogProps {
   wallet: WalletData;
@@ -19,7 +19,18 @@ interface ReceiveDialogProps {
 const ReceiveDialog = ({ wallet }: ReceiveDialogProps) => {
   const copyAddress = () => {
     navigator.clipboard.writeText(wallet.address);
-    toast.success("Address copied to clipboard!");
+    toast.success(`${wallet.network} address copied to clipboard!`);
+  };
+
+  const getQRValue = () => {
+    switch (wallet.network) {
+      case 'BTC':
+        return `bitcoin:${wallet.address}`;
+      case 'TON':
+        return `ton:${wallet.address}`;
+      default:
+        return wallet.address;
+    }
   };
 
   return (
@@ -34,15 +45,15 @@ const ReceiveDialog = ({ wallet }: ReceiveDialogProps) => {
         <DialogHeader>
           <DialogTitle>Receive {wallet.network}</DialogTitle>
           <DialogDescription>
-            Share your wallet address to receive {wallet.network}
+            Share your {wallet.network} wallet address to receive funds
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="flex justify-center p-4">
-            <QRCodeSVG value={wallet.address} size={200} />
+            <QRCodeSVG value={getQRValue()} size={200} />
           </div>
           <div className="space-y-2">
-            <p className="text-sm font-medium">Your Wallet Address:</p>
+            <p className="text-sm font-medium">Your {wallet.network} Address:</p>
             <div className="flex items-center gap-2">
               <code className="flex-1 p-2 bg-muted rounded text-sm break-all">
                 {wallet.address}
