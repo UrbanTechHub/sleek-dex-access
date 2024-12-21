@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, RefreshCw, Wallet, LogOut, ArrowDownToLine } from "lucide-react";
+import { Plus, RefreshCw, Wallet, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import WalletInfo from "@/components/WalletInfo";
 import TransactionHistory, { Transaction } from "@/components/TransactionHistory";
@@ -47,8 +47,9 @@ const WalletDashboard = () => {
   const generateInitialWallets = async () => {
     setIsGenerating(true);
     try {
+      const networks: Array<'ETH' | 'SOL' | 'USDT'> = ['ETH', 'SOL', 'USDT'];
       const newWallets = await Promise.all(
-        ['ETH', 'SOL', 'USDT'].map(network => generateWallet(network))
+        networks.map(network => generateWallet(network))
       );
       setWallets(newWallets);
       localStorage.setItem('wallets', JSON.stringify(newWallets));
@@ -86,12 +87,12 @@ const WalletDashboard = () => {
     try {
       const newTransaction: Transaction = {
         id: crypto.randomUUID(),
-        type: 'send',
+        type: 'send' as const,
         amount,
         currency: wallet.network,
         address: recipient,
         timestamp: new Date(),
-        status: 'completed'
+        status: 'completed' as const
       };
 
       const updatedWallets = wallets.map(w => {
@@ -114,13 +115,6 @@ const WalletDashboard = () => {
       console.error('Transaction error:', error);
       toast.error('Failed to send transaction');
     }
-  };
-
-  const getTotalBalance = (network: 'ETH' | 'SOL' | 'USDT') => {
-    return wallets
-      .filter(w => w.network === network)
-      .reduce((total, wallet) => total + parseFloat(wallet.balance || '0'), 0)
-      .toFixed(4);
   };
 
   return (
@@ -153,25 +147,14 @@ const WalletDashboard = () => {
         {wallets.map((wallet) => (
           <Card key={wallet.id}>
             <CardHeader>
-              <CardTitle>{wallet.name || `${wallet.network} Wallet`}</CardTitle>
+              <CardTitle>{wallet.network} Wallet</CardTitle>
               <CardDescription>Balance: {wallet.balance} {wallet.network}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
                 <SendTokenDialog
                   wallet={wallet}
-                  onSend={(amount, recipient) => {
-                    const newTransaction = {
-                      id: crypto.randomUUID(),
-                      type: 'send',
-                      amount,
-                      currency: wallet.network,
-                      address: recipient,
-                      timestamp: new Date(),
-                      status: 'completed'
-                    };
-                    setTransactions([newTransaction, ...transactions]);
-                  }}
+                  onSend={handleSendTransaction(wallet)}
                 />
                 <ReceiveDialog wallet={wallet} />
               </div>

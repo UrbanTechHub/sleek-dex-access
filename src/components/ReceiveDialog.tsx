@@ -10,7 +10,7 @@ import {
 import { ArrowDownToLine, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { WalletData } from "@/utils/walletUtils";
-import QRCode from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react"; // Changed from default import to named import
 
 interface ReceiveDialogProps {
   wallet: WalletData;
@@ -39,7 +39,7 @@ const ReceiveDialog = ({ wallet }: ReceiveDialogProps) => {
         </DialogHeader>
         <div className="space-y-4">
           <div className="flex justify-center p-4">
-            <QRCode value={wallet.address} size={200} />
+            <QRCodeSVG value={wallet.address} size={200} />
           </div>
           <div className="space-y-2">
             <p className="text-sm font-medium">Your Wallet Address:</p>
