@@ -23,8 +23,7 @@ const CreateWallet = () => {
     }
 
     try {
-      // Here we'd typically integrate with a blockchain library
-      // For now, we'll simulate wallet creation
+      localStorage.setItem('walletName', walletName);
       toast.success("Wallet created successfully!");
       navigate("/wallet-dashboard");
     } catch (error) {

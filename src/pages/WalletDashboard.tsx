@@ -1,20 +1,23 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, RefreshCw, Wallet } from "lucide-react";
+import { Plus, RefreshCw, Wallet, LogOut, ArrowDownToLine } from "lucide-react";
 import { toast } from "sonner";
 import WalletInfo from "@/components/WalletInfo";
 import TransactionHistory, { Transaction } from "@/components/TransactionHistory";
 import { WalletData, generateWallet, updateWalletBalance } from "@/utils/walletUtils";
 import SendTokenDialog from "@/components/SendTokenDialog";
-
-const SUPPORTED_NETWORKS = ['ETH', 'SOL', 'USDT'] as const;
+import ReceiveDialog from "@/components/ReceiveDialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const WalletDashboard = () => {
   const [wallets, setWallets] = useState<WalletData[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const savedWallets = localStorage.getItem('wallets');
@@ -31,11 +34,21 @@ const WalletDashboard = () => {
     }
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+      toast.success('Logged out successfully');
+    } catch (error) {
+      toast.error('Failed to logout');
+    }
+  };
+
   const generateInitialWallets = async () => {
     setIsGenerating(true);
     try {
       const newWallets = await Promise.all(
-        SUPPORTED_NETWORKS.map(network => generateWallet(network))
+        ['ETH', 'SOL', 'USDT'].map(network => generateWallet(network))
       );
       setWallets(newWallets);
       localStorage.setItem('wallets', JSON.stringify(newWallets));
@@ -71,19 +84,16 @@ const WalletDashboard = () => {
 
   const handleSendTransaction = (wallet: WalletData) => async (amount: string, recipient: string) => {
     try {
-      // Create a new transaction
       const newTransaction: Transaction = {
         id: crypto.randomUUID(),
         type: 'send',
         amount,
-        from: wallet.address,
-        to: recipient,
-        network: wallet.network,
-        timestamp: new Date().toISOString(),
+        currency: wallet.network,
+        address: recipient,
+        timestamp: new Date(),
         status: 'completed'
       };
 
-      // Update wallet balance
       const updatedWallets = wallets.map(w => {
         if (w.id === wallet.id) {
           return {
@@ -94,7 +104,6 @@ const WalletDashboard = () => {
         return w;
       });
 
-      // Update state and localStorage
       setWallets(updatedWallets);
       setTransactions([newTransaction, ...transactions]);
       localStorage.setItem('wallets', JSON.stringify(updatedWallets));
@@ -107,7 +116,7 @@ const WalletDashboard = () => {
     }
   };
 
-  const getTotalBalance = (network: typeof SUPPORTED_NETWORKS[number]) => {
+  const getTotalBalance = (network: 'ETH' | 'SOL' | 'USDT') => {
     return wallets
       .filter(w => w.network === network)
       .reduce((total, wallet) => total + parseFloat(wallet.balance || '0'), 0)
@@ -130,42 +139,49 @@ const WalletDashboard = () => {
             <RefreshCw className={`mr-2 h-4 w-4 ${isUpdating ? 'animate-spin' : ''}`} />
             Update Balances
           </Button>
+          <Button
+            variant="destructive"
+            onClick={handleLogout}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+          </Button>
         </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        {SUPPORTED_NETWORKS.map((network) => (
-          <Card key={network}>
+        {wallets.map((wallet) => (
+          <Card key={wallet.id}>
             <CardHeader>
-              <CardTitle>{network} Total Balance</CardTitle>
-              <CardDescription>{getTotalBalance(network)} {network}</CardDescription>
+              <CardTitle>{wallet.name || `${wallet.network} Wallet`}</CardTitle>
+              <CardDescription>Balance: {wallet.balance} {wallet.network}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-2">
-                {wallets.find(w => w.network === network) && (
-                  <SendTokenDialog
-                    wallet={wallets.find(w => w.network === network)!}
-                    onSend={handleSendTransaction(wallets.find(w => w.network === network)!)}
-                  />
-                )}
-                <Button className="flex-1" variant="outline">
-                  <Wallet className="mr-2 h-4 w-4" />
-                  Receive
-                </Button>
+                <SendTokenDialog
+                  wallet={wallet}
+                  onSend={(amount, recipient) => {
+                    const newTransaction = {
+                      id: crypto.randomUUID(),
+                      type: 'send',
+                      amount,
+                      currency: wallet.network,
+                      address: recipient,
+                      timestamp: new Date(),
+                      status: 'completed'
+                    };
+                    setTransactions([newTransaction, ...transactions]);
+                  }}
+                />
+                <ReceiveDialog wallet={wallet} />
               </div>
+              <WalletInfo
+                address={wallet.address}
+                network={wallet.network}
+                balance={wallet.balance}
+              />
             </CardContent>
           </Card>
-        ))}
-      </div>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {wallets.map((wallet) => (
-          <WalletInfo
-            key={wallet.id}
-            address={wallet.address}
-            network={wallet.network}
-            balance={wallet.balance}
-          />
         ))}
       </div>
 
