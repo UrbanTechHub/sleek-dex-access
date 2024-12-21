@@ -47,9 +47,12 @@ const WalletDashboard = () => {
   const generateInitialWallets = async () => {
     setIsGenerating(true);
     try {
-      const networks: Array<'ETH' | 'SOL' | 'USDT'> = ['ETH', 'SOL', 'USDT'];
+      const networks: Array<'ETH' | 'SOL' | 'BTC' | 'TON' | 'USDT'> = ['ETH', 'SOL', 'BTC', 'TON', 'USDT'];
+      const walletData = localStorage.getItem('walletData');
+      const { name } = walletData ? JSON.parse(walletData) : { name: 'My Wallet' };
+      
       const newWallets = await Promise.all(
-        networks.map(network => generateWallet(network))
+        networks.map(network => generateWallet(network, `${name} - ${network}`))
       );
       setWallets(newWallets);
       localStorage.setItem('wallets', JSON.stringify(newWallets));

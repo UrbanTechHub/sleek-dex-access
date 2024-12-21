@@ -3,20 +3,22 @@ import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 
 export interface WalletData {
   id: string;
-  network: 'ETH' | 'SOL' | 'USDT';
+  name: string;
+  network: 'ETH' | 'SOL' | 'BTC' | 'TON' | 'USDT';
   address: string;
   privateKey: string;
   balance: string;
   lastUpdated: Date;
 }
 
-export const generateWallet = async (network: 'ETH' | 'SOL' | 'USDT'): Promise<WalletData> => {
+export const generateWallet = async (network: 'ETH' | 'SOL' | 'BTC' | 'TON' | 'USDT', name: string): Promise<WalletData> => {
   switch (network) {
     case 'ETH':
     case 'USDT': {
       const wallet = ethers.Wallet.createRandom();
       return {
         id: crypto.randomUUID(),
+        name,
         network,
         address: wallet.address,
         privateKey: wallet.privateKey,
@@ -25,18 +27,31 @@ export const generateWallet = async (network: 'ETH' | 'SOL' | 'USDT'): Promise<W
       };
     }
     case 'SOL': {
-      // Generate random bytes for the keypair
       const randomBytes = new Uint8Array(32);
       crypto.getRandomValues(randomBytes);
-      
-      // Create keypair from the random bytes
       const keypair = Keypair.fromSeed(randomBytes);
       
       return {
         id: crypto.randomUUID(),
+        name,
         network,
         address: keypair.publicKey.toString(),
-        privateKey: Array.from(keypair.secretKey).join(','), // Store as comma-separated string
+        privateKey: Array.from(keypair.secretKey).join(','),
+        balance: '0',
+        lastUpdated: new Date(),
+      };
+    }
+    case 'BTC':
+    case 'TON': {
+      // For demonstration purposes, generating a simple random address
+      // In a real implementation, you'd want to use proper Bitcoin/TON wallet generation libraries
+      const wallet = ethers.Wallet.createRandom();
+      return {
+        id: crypto.randomUUID(),
+        name,
+        network,
+        address: wallet.address,
+        privateKey: wallet.privateKey,
         balance: '0',
         lastUpdated: new Date(),
       };
