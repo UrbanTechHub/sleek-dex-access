@@ -22,9 +22,6 @@ const SendTokenDialog = ({ wallet, onSend }: SendTokenDialogProps) => {
       case 'BTC':
         // Basic Bitcoin address validation (starts with 1, 3, or bc1)
         return /^(1|3|bc1)[a-zA-Z0-9]{25,62}$/.test(address);
-      case 'TON':
-        // Basic TON address validation (64 characters)
-        return /^[a-zA-Z0-9]{48}$/.test(address);
       default:
         // ETH/USDT address validation (0x followed by 40 hex characters)
         return /^0x[a-fA-F0-9]{40}$/.test(address);

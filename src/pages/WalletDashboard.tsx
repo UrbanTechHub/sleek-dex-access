@@ -47,7 +47,7 @@ const WalletDashboard = () => {
   const generateInitialWallets = async () => {
     setIsGenerating(true);
     try {
-      const networks: Array<'ETH' | 'SOL' | 'BTC' | 'TON' | 'USDT'> = ['ETH', 'SOL', 'BTC', 'TON', 'USDT'];
+      const networks: Array<'ETH' | 'BTC' | 'USDT'> = ['ETH', 'BTC', 'USDT'];
       const walletData = localStorage.getItem('walletData');
       const { name } = walletData ? JSON.parse(walletData) : { name: 'My Wallet' };
       

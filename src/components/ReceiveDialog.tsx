@@ -26,8 +26,6 @@ const ReceiveDialog = ({ wallet }: ReceiveDialogProps) => {
     switch (wallet.network) {
       case 'BTC':
         return `bitcoin:${wallet.address}`;
-      case 'TON':
-        return `ton:${wallet.address}`;
       default:
         return wallet.address;
     }

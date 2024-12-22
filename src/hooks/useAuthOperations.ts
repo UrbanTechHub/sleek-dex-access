@@ -21,15 +21,13 @@ export const useAuthOperations = () => {
       const userId = crypto.randomUUID();
       const defaultWalletName = "My Wallet";
       const ethWallet = await generateWallet('ETH', `${defaultWalletName} - ETH`);
-      const solWallet = await generateWallet('SOL', `${defaultWalletName} - SOL`);
       const usdtWallet = await generateWallet('USDT', `${defaultWalletName} - USDT`);
       const btcWallet = await generateWallet('BTC', `${defaultWalletName} - BTC`);
-      const tonWallet = await generateWallet('TON', `${defaultWalletName} - TON`);
 
       const newUser: User = {
         id: userId,
         pin,
-        wallets: [ethWallet, solWallet, usdtWallet, btcWallet, tonWallet],
+        wallets: [ethWallet, usdtWallet, btcWallet],
         transactions: [],
       };
 
