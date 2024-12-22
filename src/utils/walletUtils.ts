@@ -2,9 +2,11 @@ import { ethers } from "ethers";
 import { Keypair } from "@solana/web3.js";
 import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
-import { getRandomNonce, KeyPair as TonKeyPair } from '@ton/crypto';
+import { KeyPair } from '@ton/crypto';
+import ECPairFactory from 'ecpair';
 
-// Initialize ECPair library with secp256k1
+// Initialize Bitcoin-related libraries
+const ECPair = ECPairFactory(ecc);
 bitcoin.initEccLib(ecc);
 
 export interface WalletData {
@@ -46,11 +48,11 @@ export const generateWallet = async (network: 'ETH' | 'SOL' | 'BTC' | 'TON' | 'U
     }
     case 'BTC': {
       // Generate Bitcoin testnet wallet for safety
-      const network = bitcoin.networks.testnet;
-      const keyPair = bitcoin.ECPair.makeRandom({ network });
+      const testnet = bitcoin.networks.testnet;
+      const keyPair = ECPair.makeRandom({ network: testnet });
       const { address } = bitcoin.payments.p2pkh({ 
         pubkey: keyPair.publicKey,
-        network 
+        network: testnet
       });
       
       return {
@@ -64,7 +66,7 @@ export const generateWallet = async (network: 'ETH' | 'SOL' | 'BTC' | 'TON' | 'U
       };
     }
     case 'TON': {
-      const keyPair = await TonKeyPair.random(await getRandomNonce());
+      const keyPair = await KeyPair.random();
       const publicKey = keyPair.publicKey.toString('hex');
       
       return {
