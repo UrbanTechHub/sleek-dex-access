@@ -118,5 +118,3 @@ export const updateWalletBalance = async (wallet: WalletData): Promise<string> =
     return wallet.balance;
   }
 };
-
-<lov-add-dependency>tiny-secp256k1@latest</lov-add-dependency>
