@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 interface WalletInfoProps {
   address: string;
-  network: 'ETH' | 'SOL' | 'BTC' | 'TON' | 'USDT';
+  network: 'ETH' | 'BTC' | 'USDT';
   balance: string;
 }
 
@@ -18,14 +18,8 @@ const WalletInfo = ({ address, network, balance }: WalletInfoProps) => {
   const viewExplorer = () => {
     let explorerUrl = '';
     switch (network) {
-      case 'SOL':
-        explorerUrl = `https://explorer.solana.com/address/${address}`;
-        break;
       case 'BTC':
         explorerUrl = `https://www.blockchain.com/explorer/addresses/btc/${address}`;
-        break;
-      case 'TON':
-        explorerUrl = `https://tonscan.org/address/${address}`;
         break;
       case 'USDT':
       case 'ETH':

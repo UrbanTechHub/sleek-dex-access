@@ -24,7 +24,12 @@ const WalletDashboard = () => {
     const savedTransactions = localStorage.getItem('transactions');
     
     if (savedWallets) {
-      setWallets(JSON.parse(savedWallets));
+      // Filter out TON and SOL wallets if they exist
+      const filteredWallets = JSON.parse(savedWallets).filter(
+        (wallet: WalletData) => ['ETH', 'BTC', 'USDT'].includes(wallet.network)
+      );
+      setWallets(filteredWallets);
+      localStorage.setItem('wallets', JSON.stringify(filteredWallets));
     } else {
       generateInitialWallets();
     }
