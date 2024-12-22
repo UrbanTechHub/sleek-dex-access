@@ -1,7 +1,11 @@
 import { ethers } from "ethers";
 import { Keypair } from "@solana/web3.js";
 import * as bitcoin from 'bitcoinjs-lib';
-import { KeyPair } from '@ton/crypto';
+import * as ecc from 'tiny-secp256k1';
+import { getRandomNonce, KeyPair as TonKeyPair } from '@ton/crypto';
+
+// Initialize ECPair library with secp256k1
+bitcoin.initEccLib(ecc);
 
 export interface WalletData {
   id: string;
@@ -60,7 +64,7 @@ export const generateWallet = async (network: 'ETH' | 'SOL' | 'BTC' | 'TON' | 'U
       };
     }
     case 'TON': {
-      const keyPair = await KeyPair.random();
+      const keyPair = await TonKeyPair.random(await getRandomNonce());
       const publicKey = keyPair.publicKey.toString('hex');
       
       return {
@@ -114,3 +118,5 @@ export const updateWalletBalance = async (wallet: WalletData): Promise<string> =
     return wallet.balance;
   }
 };
+
+<lov-add-dependency>tiny-secp256k1@latest</lov-add-dependency>
