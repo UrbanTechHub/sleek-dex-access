@@ -41,7 +41,7 @@ export const generateWallet = async (network: 'ETH' | 'SOL' | 'BTC' | 'TON' | 'U
         name,
         network,
         address: keypair.publicKey.toString(),
-        privateKey: Array.from(keypair.secretKey).join(','),
+        privateKey: Buffer.from(keypair.secretKey).toString('hex'),
         balance: '0',
         lastUpdated: new Date(),
       };
@@ -66,15 +66,17 @@ export const generateWallet = async (network: 'ETH' | 'SOL' | 'BTC' | 'TON' | 'U
       };
     }
     case 'TON': {
-      const keyPair = await KeyPair.random();
-      const publicKey = keyPair.publicKey.toString('hex');
+      // Create a new key pair using the synchronous version
+      const keyPair = KeyPair.create();
+      const publicKey = Buffer.from(keyPair.publicKey).toString('hex');
+      const privateKey = Buffer.from(keyPair.secretKey).toString('hex');
       
       return {
         id: crypto.randomUUID(),
         name,
         network: 'TON',
         address: publicKey,
-        privateKey: keyPair.secretKey.toString('hex'),
+        privateKey: privateKey,
         balance: '0',
         lastUpdated: new Date(),
       };
