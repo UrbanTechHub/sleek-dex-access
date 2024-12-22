@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
 import ECPairFactory from 'ecpair';
+import { Buffer } from 'buffer';
 
 // Initialize Bitcoin-related libraries
 const ECPair = ECPairFactory(ecc);
@@ -36,7 +37,7 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT', name: stri
       // Generate Bitcoin testnet wallet for safety
       const keyPair = ECPair.makeRandom({ network: bitcoin.networks.testnet });
       const { address } = bitcoin.payments.p2pkh({
-        pubkey: keyPair.publicKey,
+        pubkey: Buffer.from(keyPair.publicKey),
         network: bitcoin.networks.testnet,
       });
 
