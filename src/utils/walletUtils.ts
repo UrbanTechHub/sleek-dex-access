@@ -37,7 +37,7 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT', name: stri
       const testnet = bitcoin.networks.testnet;
       const keyPair = ECPair.makeRandom({ network: testnet });
       const { address } = bitcoin.payments.p2pkh({ 
-        pubkey: keyPair.publicKey,
+        pubkey: Buffer.from(keyPair.publicKey), // Convert Uint8Array to Buffer
         network: testnet
       });
       
