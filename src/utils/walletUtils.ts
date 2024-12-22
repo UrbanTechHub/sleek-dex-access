@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import { Keypair } from "@solana/web3.js";
 import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
-import { KeyPair } from '@ton/crypto';
+import { mnemonicToWalletKey } from '@ton/crypto';
 import ECPairFactory from 'ecpair';
 
 // Initialize Bitcoin-related libraries
@@ -36,12 +36,13 @@ export const generateWallet = async (network: 'ETH' | 'SOL' | 'BTC' | 'TON' | 'U
     }
     case 'SOL': {
       const keypair = Keypair.generate();
+      const secretKeyHex = Buffer.from(keypair.secretKey).toString('hex');
       return {
         id: crypto.randomUUID(),
         name,
         network,
         address: keypair.publicKey.toString(),
-        privateKey: Buffer.from(keypair.secretKey).toString('hex'),
+        privateKey: secretKeyHex,
         balance: '0',
         lastUpdated: new Date(),
       };
@@ -66,17 +67,18 @@ export const generateWallet = async (network: 'ETH' | 'SOL' | 'BTC' | 'TON' | 'U
       };
     }
     case 'TON': {
-      // Create a new key pair using the synchronous version
-      const keyPair = KeyPair.create();
-      const publicKey = Buffer.from(keyPair.publicKey).toString('hex');
-      const privateKey = Buffer.from(keyPair.secretKey).toString('hex');
+      // Generate a random mnemonic and convert it to a key pair
+      const mnemonic = Array(24).fill(0).map(() => Math.random().toString(36).slice(2)).join(' ');
+      const key = await mnemonicToWalletKey(mnemonic);
+      const publicKeyHex = Buffer.from(key.publicKey).toString('hex');
+      const privateKeyHex = Buffer.from(key.secretKey).toString('hex');
       
       return {
         id: crypto.randomUUID(),
         name,
         network: 'TON',
-        address: publicKey,
-        privateKey: privateKey,
+        address: publicKeyHex,
+        privateKey: privateKeyHex,
         balance: '0',
         lastUpdated: new Date(),
       };
