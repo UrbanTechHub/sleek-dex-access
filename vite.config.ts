@@ -21,4 +21,7 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    target: 'esnext', // This enables top-level await support
+  },
 }));
