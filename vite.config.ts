@@ -24,4 +24,8 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'esnext', // This enables top-level await support
   },
+  define: {
+    global: 'globalThis',
+    'process.env': {},
+  },
 }));
