@@ -1,5 +1,7 @@
 import { ethers } from "ethers";
-import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
+import * as bitcoin from 'bitcoinjs-lib';
+import { KeyPair } from '@ton/crypto';
 
 export interface WalletData {
   id: string;
@@ -27,10 +29,7 @@ export const generateWallet = async (network: 'ETH' | 'SOL' | 'BTC' | 'TON' | 'U
       };
     }
     case 'SOL': {
-      const randomBytes = new Uint8Array(32);
-      crypto.getRandomValues(randomBytes);
-      const keypair = Keypair.fromSeed(randomBytes);
-      
+      const keypair = Keypair.generate();
       return {
         id: crypto.randomUUID(),
         name,
@@ -41,17 +40,35 @@ export const generateWallet = async (network: 'ETH' | 'SOL' | 'BTC' | 'TON' | 'U
         lastUpdated: new Date(),
       };
     }
-    case 'BTC':
-    case 'TON': {
-      // For demonstration purposes, generating a simple random address
-      // In a real implementation, you'd want to use proper Bitcoin/TON wallet generation libraries
-      const wallet = ethers.Wallet.createRandom();
+    case 'BTC': {
+      // Generate Bitcoin testnet wallet for safety
+      const network = bitcoin.networks.testnet;
+      const keyPair = bitcoin.ECPair.makeRandom({ network });
+      const { address } = bitcoin.payments.p2pkh({ 
+        pubkey: keyPair.publicKey,
+        network 
+      });
+      
       return {
         id: crypto.randomUUID(),
         name,
-        network,
-        address: wallet.address,
-        privateKey: wallet.privateKey,
+        network: 'BTC',
+        address: address || '',
+        privateKey: keyPair.toWIF(),
+        balance: '0',
+        lastUpdated: new Date(),
+      };
+    }
+    case 'TON': {
+      const keyPair = await KeyPair.random();
+      const publicKey = keyPair.publicKey.toString('hex');
+      
+      return {
+        id: crypto.randomUUID(),
+        name,
+        network: 'TON',
+        address: publicKey,
+        privateKey: keyPair.secretKey.toString('hex'),
         balance: '0',
         lastUpdated: new Date(),
       };
@@ -70,21 +87,25 @@ export const updateWalletBalance = async (wallet: WalletData): Promise<string> =
         return ethers.formatEther(balance);
       }
       case 'SOL': {
-        // For now, return the existing balance since we can't fetch real-time balance without a connection
-        // In a real-world scenario, you'd want to implement a proper Solana balance fetching method
+        // For demonstration purposes, returning existing balance
+        // In production, implement proper Solana balance fetching
         return wallet.balance || '0';
       }
       case 'USDT': {
-        // For USDT, we would need to interact with the USDT contract
         const provider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/demo');
         const usdtContract = new ethers.Contract(
-          '0xdac17f958d2ee523a2206206994597c13d831ec7', // USDT contract address
+          '0xdac17f958d2ee523a2206206994597c13d831ec7',
           ['function balanceOf(address) view returns (uint256)'],
           provider
         );
         const balance = await usdtContract.balanceOf(wallet.address);
-        return ethers.formatUnits(balance, 6); // USDT uses 6 decimals
+        return ethers.formatUnits(balance, 6);
       }
+      case 'BTC':
+      case 'TON':
+        // For demonstration purposes
+        // In production, implement proper Bitcoin/TON balance fetching
+        return wallet.balance || '0';
       default:
         return '0';
     }
