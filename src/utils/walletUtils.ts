@@ -34,18 +34,21 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT', name: stri
     }
     case 'BTC': {
       // Generate Bitcoin testnet wallet for safety
-      const testnet = bitcoin.networks.testnet;
-      const keyPair = ECPair.makeRandom({ network: testnet });
-      const { address } = bitcoin.payments.p2pkh({ 
-        pubkey: Buffer.from(keyPair.publicKey), // Convert Uint8Array to Buffer
-        network: testnet
+      const keyPair = ECPair.makeRandom({ network: bitcoin.networks.testnet });
+      const { address } = bitcoin.payments.p2pkh({
+        pubkey: keyPair.publicKey,
+        network: bitcoin.networks.testnet,
       });
-      
+
+      if (!address) {
+        throw new Error('Failed to generate Bitcoin address');
+      }
+
       return {
         id: crypto.randomUUID(),
         name,
         network: 'BTC',
-        address: address || '',
+        address: address,
         privateKey: keyPair.toWIF(),
         balance: '0',
         lastUpdated: new Date(),
