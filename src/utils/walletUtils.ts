@@ -34,11 +34,11 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT', name: stri
       };
     }
     case 'BTC': {
-      // Generate Bitcoin mainnet wallet
-      const keyPair = ECPair.makeRandom({ network: bitcoin.networks.bitcoin });
-      const { address } = bitcoin.payments.p2pkh({
-        pubkey: Buffer.from(keyPair.publicKey),
-        network: bitcoin.networks.bitcoin,
+      // Generate Bitcoin mainnet wallet using P2WPKH (native SegWit)
+      const keyPair = ECPair.makeRandom();
+      const { address } = bitcoin.payments.p2wpkh({
+        pubkey: keyPair.publicKey,
+        network: bitcoin.networks.bitcoin
       });
 
       if (!address) {

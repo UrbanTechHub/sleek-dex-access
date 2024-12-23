@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { generateWallet } from '@/utils/walletUtils';
@@ -6,15 +6,18 @@ import { storage } from '@/utils/localStorage';
 import type { User } from '@/types/auth';
 
 export const useAuthOperations = () => {
-  const [user, setUser] = useState<User | null>(storage.getUser());
+  const [user, setUser] = useState<User | null>(() => {
+    // Initialize user state from localStorage on component mount
+    return storage.getUser();
+  });
   const navigate = useNavigate();
 
-  const fetchUserData = async (userId: string) => {
-    const storedUser = storage.getUser();
-    if (storedUser && storedUser.id === userId) {
-      setUser(storedUser);
+  // Persist user data whenever it changes
+  useEffect(() => {
+    if (user) {
+      storage.setUser(user);
     }
-  };
+  }, [user]);
 
   const createAccount = async (pin: string) => {
     try {
@@ -38,6 +41,7 @@ export const useAuthOperations = () => {
     } catch (error) {
       console.error('Account creation error:', error);
       toast.error('Failed to create account');
+      throw error;
     }
   };
 
@@ -50,10 +54,12 @@ export const useAuthOperations = () => {
         navigate('/wallet-dashboard');
       } else {
         toast.error('Invalid PIN');
+        throw new Error('Invalid PIN');
       }
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Login failed');
+      throw error;
     }
   };
 
@@ -65,6 +71,7 @@ export const useAuthOperations = () => {
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Logout failed');
+      throw error;
     }
   };
 
@@ -73,6 +80,5 @@ export const useAuthOperations = () => {
     login,
     logout,
     createAccount,
-    fetchUserData,
   };
 };

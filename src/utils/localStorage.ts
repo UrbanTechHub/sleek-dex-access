@@ -1,12 +1,33 @@
+import type { User } from '@/types/auth';
+
+const USER_STORAGE_KEY = 'secure_dex_user';
+
 export const storage = {
-  getUser: () => {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+  getUser: (): User | null => {
+    try {
+      const userData = localStorage.getItem(USER_STORAGE_KEY);
+      return userData ? JSON.parse(userData) : null;
+    } catch (error) {
+      console.error('Error reading user data from localStorage:', error);
+      return null;
+    }
   },
-  setUser: (user: any) => {
-    localStorage.setItem('user', JSON.stringify(user));
+  
+  setUser: (user: User): void => {
+    try {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    } catch (error) {
+      console.error('Error saving user data to localStorage:', error);
+      throw error;
+    }
   },
-  removeUser: () => {
-    localStorage.removeItem('user');
+  
+  removeUser: (): void => {
+    try {
+      localStorage.removeItem(USER_STORAGE_KEY);
+    } catch (error) {
+      console.error('Error removing user data from localStorage:', error);
+      throw error;
+    }
   }
 };
