@@ -7,8 +7,9 @@ import type { User } from '@/types/auth';
 
 export const useAuthOperations = () => {
   const [user, setUser] = useState<User | null>(() => {
-    // Initialize user state from localStorage on component mount
-    return storage.getUser();
+    const storedUser = storage.getUser();
+    console.log('Initial stored user:', storedUser); // Debug log
+    return storedUser;
   });
   const navigate = useNavigate();
 
@@ -16,6 +17,7 @@ export const useAuthOperations = () => {
   useEffect(() => {
     if (user) {
       storage.setUser(user);
+      console.log('User data updated in storage:', user); // Debug log
     }
   }, [user]);
 
@@ -34,8 +36,9 @@ export const useAuthOperations = () => {
         transactions: [],
       };
 
-      storage.setUser(newUser);
       setUser(newUser);
+      storage.setUser(newUser);
+      console.log('Account created with data:', newUser); // Debug log
       toast.success('Account created successfully!');
       navigate('/wallet-dashboard');
     } catch (error) {
@@ -48,17 +51,26 @@ export const useAuthOperations = () => {
   const login = async (pin: string) => {
     try {
       const storedUser = storage.getUser();
-      if (storedUser && storedUser.pin === pin) {
+      console.log('Attempting login with PIN:', pin); // Debug log
+      console.log('Stored user data:', storedUser); // Debug log
+
+      if (!storedUser) {
+        toast.error('No account found. Please create one first.');
+        throw new Error('No account found');
+      }
+
+      if (storedUser.pin === pin) {
         setUser(storedUser);
+        console.log('Login successful:', storedUser); // Debug log
         toast.success('Login successful!');
         navigate('/wallet-dashboard');
       } else {
+        console.log('PIN mismatch - Stored PIN:', storedUser.pin, 'Entered PIN:', pin); // Debug log
         toast.error('Invalid PIN');
         throw new Error('Invalid PIN');
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error('Login failed');
       throw error;
     }
   };
@@ -67,6 +79,7 @@ export const useAuthOperations = () => {
     try {
       storage.removeUser();
       setUser(null);
+      console.log('User logged out'); // Debug log
       navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
