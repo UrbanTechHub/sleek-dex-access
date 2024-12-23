@@ -36,8 +36,9 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT', name: stri
     case 'BTC': {
       // Generate Bitcoin mainnet wallet using P2WPKH (native SegWit)
       const keyPair = ECPair.makeRandom();
+      const pubkeyBuffer = Buffer.from(keyPair.publicKey);
       const { address } = bitcoin.payments.p2wpkh({
-        pubkey: keyPair.publicKey,
+        pubkey: pubkeyBuffer,
         network: bitcoin.networks.bitcoin
       });
 
