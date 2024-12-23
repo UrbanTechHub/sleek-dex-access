@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface PasskeyAuthProps {
   mode: 'login' | 'create';
-  onSuccess?: () => void;  // Added this prop
+  onSuccess?: () => void;
 }
 
 const PasskeyAuth = ({ mode, onSuccess }: PasskeyAuthProps) => {
@@ -17,6 +17,19 @@ const PasskeyAuth = ({ mode, onSuccess }: PasskeyAuthProps) => {
   const [pin, setPin] = useState("");
   const { toast } = useToast();
   const { login, createAccount } = useAuth();
+
+  const validatePin = (pin: string): boolean => {
+    if (!pin || pin.length < 6) {
+      toast({
+        title: "Invalid PIN",
+        description: "PIN must be at least 6 characters long",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return false;
+    }
+    return true;
+  };
 
   const handleBiometricAuth = async () => {
     setIsAuthenticating(true);
@@ -55,13 +68,16 @@ const PasskeyAuth = ({ mode, onSuccess }: PasskeyAuthProps) => {
         });
         
         if (credential) {
-          const defaultPin = '123456';
+          const defaultPin = crypto.getRandomValues(new Uint8Array(4))
+            .reduce((acc, val) => acc + (val % 10), '')
+            .padStart(6, '0');
+            
           if (mode === 'create') {
             await createAccount(defaultPin);
           } else {
             await login(defaultPin);
           }
-          onSuccess?.(); // Call onSuccess if provided
+          onSuccess?.();
         }
       } else {
         throw new Error("Web Authentication API not supported");
@@ -81,13 +97,7 @@ const PasskeyAuth = ({ mode, onSuccess }: PasskeyAuthProps) => {
   };
 
   const handlePinAuth = async () => {
-    if (pin.length < 6) {
-      toast({
-        title: "Invalid PIN",
-        description: "PIN must be at least 6 characters",
-        variant: "destructive",
-        duration: 3000,
-      });
+    if (!validatePin(pin)) {
       return;
     }
 
@@ -97,7 +107,7 @@ const PasskeyAuth = ({ mode, onSuccess }: PasskeyAuthProps) => {
       } else {
         await login(pin);
       }
-      onSuccess?.(); // Call onSuccess if provided
+      onSuccess?.();
     } catch (error) {
       console.error("PIN authentication error:", error);
       toast({
@@ -135,10 +145,11 @@ const PasskeyAuth = ({ mode, onSuccess }: PasskeyAuthProps) => {
           <div className="space-y-4">
             <Input
               type="password"
-              placeholder="Enter your PIN"
+              placeholder="Enter your PIN (minimum 6 characters)"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               className="w-full"
+              minLength={6}
             />
             <Button
               onClick={handlePinAuth}

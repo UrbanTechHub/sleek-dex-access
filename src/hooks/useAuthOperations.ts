@@ -22,11 +22,21 @@ export const useAuthOperations = () => {
 
   const createAccount = async (pin: string) => {
     try {
+      // Validate PIN
+      if (!pin || pin.length < 6) {
+        toast.error('PIN must be at least 6 characters long');
+        throw new Error('Invalid PIN');
+      }
+
       const userId = crypto.randomUUID();
       const defaultWalletName = "My Wallet";
-      const ethWallet = await generateWallet('ETH', `${defaultWalletName} - ETH`);
-      const usdtWallet = await generateWallet('USDT', `${defaultWalletName} - USDT`);
-      const btcWallet = await generateWallet('BTC', `${defaultWalletName} - BTC`);
+      
+      // Generate wallets with proper error handling
+      const [ethWallet, usdtWallet, btcWallet] = await Promise.all([
+        generateWallet('ETH', `${defaultWalletName} - ETH`),
+        generateWallet('USDT', `${defaultWalletName} - USDT`),
+        generateWallet('BTC', `${defaultWalletName} - BTC`)
+      ]);
 
       const newUser: User = {
         id: userId,
@@ -35,8 +45,9 @@ export const useAuthOperations = () => {
         transactions: [],
       };
 
-      // First save to storage, then update state
+      // Save to storage first
       storage.setUser(newUser);
+      // Then update state
       setUser(newUser);
       
       console.log('New account created:', newUser);
@@ -44,13 +55,19 @@ export const useAuthOperations = () => {
       navigate('/wallet-dashboard');
     } catch (error) {
       console.error('Account creation error:', error);
-      toast.error('Failed to create account');
+      toast.error('Failed to create account. Please try again.');
       throw error;
     }
   };
 
   const login = async (pin: string) => {
     try {
+      // Validate PIN
+      if (!pin || pin.length < 6) {
+        toast.error('PIN must be at least 6 characters long');
+        throw new Error('Invalid PIN');
+      }
+
       console.log('Attempting login with PIN:', pin);
       const storedUser = storage.getUser();
       console.log('Retrieved user data for login:', storedUser);
@@ -83,6 +100,7 @@ export const useAuthOperations = () => {
       setUser(null);
       console.log('User logged out successfully');
       navigate('/');
+      toast.success('Logged out successfully');
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Logout failed');
