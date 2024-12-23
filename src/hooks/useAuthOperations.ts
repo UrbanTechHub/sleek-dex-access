@@ -8,16 +8,15 @@ import type { User } from '@/types/auth';
 export const useAuthOperations = () => {
   const [user, setUser] = useState<User | null>(() => {
     const storedUser = storage.getUser();
-    console.log('Initial stored user:', storedUser); // Debug log
+    console.log('Initial user state:', storedUser);
     return storedUser;
   });
   const navigate = useNavigate();
 
-  // Persist user data whenever it changes
   useEffect(() => {
     if (user) {
       storage.setUser(user);
-      console.log('User data updated in storage:', user); // Debug log
+      console.log('Updated user in storage:', user);
     }
   }, [user]);
 
@@ -36,9 +35,11 @@ export const useAuthOperations = () => {
         transactions: [],
       };
 
-      setUser(newUser);
+      // First save to storage, then update state
       storage.setUser(newUser);
-      console.log('Account created with data:', newUser); // Debug log
+      setUser(newUser);
+      
+      console.log('New account created:', newUser);
       toast.success('Account created successfully!');
       navigate('/wallet-dashboard');
     } catch (error) {
@@ -50,25 +51,26 @@ export const useAuthOperations = () => {
 
   const login = async (pin: string) => {
     try {
+      console.log('Attempting login with PIN:', pin);
       const storedUser = storage.getUser();
-      console.log('Attempting login with PIN:', pin); // Debug log
-      console.log('Stored user data:', storedUser); // Debug log
+      console.log('Retrieved user data for login:', storedUser);
 
       if (!storedUser) {
+        console.log('No user account found in storage');
         toast.error('No account found. Please create one first.');
         throw new Error('No account found');
       }
 
-      if (storedUser.pin === pin) {
-        setUser(storedUser);
-        console.log('Login successful:', storedUser); // Debug log
-        toast.success('Login successful!');
-        navigate('/wallet-dashboard');
-      } else {
-        console.log('PIN mismatch - Stored PIN:', storedUser.pin, 'Entered PIN:', pin); // Debug log
+      if (storedUser.pin !== pin) {
+        console.log('PIN mismatch - Stored:', storedUser.pin, 'Entered:', pin);
         toast.error('Invalid PIN');
         throw new Error('Invalid PIN');
       }
+
+      setUser(storedUser);
+      console.log('Login successful:', storedUser);
+      toast.success('Login successful!');
+      navigate('/wallet-dashboard');
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -79,7 +81,7 @@ export const useAuthOperations = () => {
     try {
       storage.removeUser();
       setUser(null);
-      console.log('User logged out'); // Debug log
+      console.log('User logged out successfully');
       navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
