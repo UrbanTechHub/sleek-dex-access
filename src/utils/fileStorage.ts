@@ -7,7 +7,7 @@ interface StoredData {
     pin: string;
     wallets: Array<{
       id: string;
-      network: string;
+      network: 'ETH' | 'BTC' | 'USDT';
       address: string;
       balance: string;
     }>;
