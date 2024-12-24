@@ -17,6 +17,8 @@ export const fileStorage = {
       if (!existingData) {
         localStorage.setItem(USER_DATA_KEY, JSON.stringify(initialData));
         console.log('Initialized empty user data storage');
+      } else {
+        console.log('Existing storage found:', JSON.parse(existingData));
       }
     } catch (error) {
       console.error('Error initializing storage:', error);
@@ -27,10 +29,13 @@ export const fileStorage = {
     try {
       const data = localStorage.getItem(USER_DATA_KEY);
       if (!data) {
+        console.log('No data found, initializing storage');
         fileStorage.init();
         return initialData;
       }
-      return JSON.parse(data);
+      const parsedData = JSON.parse(data) as StoredData;
+      console.log('Retrieved storage data:', parsedData);
+      return parsedData;
     } catch (error) {
       console.error('Error getting data:', error);
       return initialData;
@@ -40,10 +45,23 @@ export const fileStorage = {
   saveUser: (userData: User): boolean => {
     try {
       console.log('Attempting to save user:', userData);
+      
+      // Initialize storage if needed
+      if (!localStorage.getItem(USER_DATA_KEY)) {
+        fileStorage.init();
+      }
+      
       const currentData = fileStorage.getAllData();
       currentData.users[userData.id] = userData;
-      localStorage.setItem(USER_DATA_KEY, JSON.stringify(currentData));
-      console.log('Successfully saved user data. Current storage:', currentData);
+      
+      // Save the updated data
+      const dataToSave = JSON.stringify(currentData);
+      localStorage.setItem(USER_DATA_KEY, dataToSave);
+      
+      // Verify the save was successful
+      const savedData = localStorage.getItem(USER_DATA_KEY);
+      console.log('Verification - Saved data:', JSON.parse(savedData || '{}'));
+      
       return true;
     } catch (error) {
       console.error('Error saving user data:', error);
