@@ -6,9 +6,9 @@ export const storage = {
     try {
       // Get the first user found (for now we support single user)
       const users = Object.values(fileStorage.getAllData().users);
-      const user = users[0] as User | undefined;
-      console.log('Retrieved user from storage:', user);
-      return user || null;
+      const firstUser = users[0];
+      console.log('Retrieved user from storage:', firstUser);
+      return firstUser || null;
     } catch (error) {
       console.error('Error reading user data:', error);
       return null;

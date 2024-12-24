@@ -1,26 +1,10 @@
+import type { User } from '@/types/auth';
+
 // This utility handles file-based storage operations for user data
 const USER_DATA_KEY = 'secure_dex_user_data';
 
 interface StoredData {
-  users: Record<string, {
-    id: string;
-    pin: string;
-    wallets: Array<{
-      id: string;
-      network: 'ETH' | 'BTC' | 'USDT';
-      address: string;
-      balance: string;
-    }>;
-    transactions: Array<{
-      id: string;
-      type: 'send' | 'receive';
-      amount: string;
-      currency: string;
-      address: string;
-      timestamp: string;
-      status: 'pending' | 'completed' | 'failed';
-    }>;
-  }>;
+  users: Record<string, User>;
 }
 
 const initialData: StoredData = {
@@ -47,7 +31,7 @@ export const fileStorage = {
   },
 
   // Save user data
-  saveUser: (userData: StoredData['users'][string]) => {
+  saveUser: (userData: User): boolean => {
     try {
       const currentData = fileStorage.getAllData();
       currentData.users[userData.id] = userData;
@@ -61,19 +45,30 @@ export const fileStorage = {
   },
 
   // Get user by ID
-  getUser: (userId: string) => {
+  getUser: (userId: string): User | null => {
     const data = fileStorage.getAllData();
     return data.users[userId] || null;
   },
 
   // Get user by PIN
-  getUserByPin: (pin: string) => {
-    const data = fileStorage.getAllData();
-    return Object.values(data.users).find(user => user.pin === pin) || null;
+  getUserByPin: (pin: string): User | null => {
+    try {
+      const data = fileStorage.getAllData();
+      console.log('Looking for user with PIN:', pin);
+      console.log('Current stored users:', data.users);
+      
+      const foundUser = Object.values(data.users).find(user => user.pin === pin);
+      console.log('Found user:', foundUser);
+      
+      return foundUser || null;
+    } catch (error) {
+      console.error('Error finding user by PIN:', error);
+      return null;
+    }
   },
 
   // Delete user
-  deleteUser: (userId: string) => {
+  deleteUser: (userId: string): boolean => {
     try {
       const currentData = fileStorage.getAllData();
       delete currentData.users[userId];
