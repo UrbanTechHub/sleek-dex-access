@@ -4,8 +4,8 @@ import type { User } from '@/types/auth';
 export const storage = {
   getUser: (): User | null => {
     try {
-      // Get the first user found (for now we support single user)
-      const users = Object.values(fileStorage.getAllData().users);
+      const data = fileStorage.getAllData();
+      const users = Object.values(data.users);
       const firstUser = users[0];
       console.log('Retrieved user from storage:', firstUser);
       return firstUser || null;
@@ -37,7 +37,11 @@ export const storage = {
     try {
       const user = storage.getUser();
       if (user) {
-        fileStorage.deleteUser(user.id);
+        // Instead of clearing all data, just remove the specific user
+        const success = fileStorage.deleteUser(user.id);
+        if (!success) {
+          throw new Error('Failed to remove user data');
+        }
       }
       console.log('Successfully removed user data');
     } catch (error) {

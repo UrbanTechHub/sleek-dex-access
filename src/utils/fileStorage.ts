@@ -55,8 +55,7 @@ export const fileStorage = {
       currentData.users[userData.id] = userData;
       
       // Save the updated data
-      const dataToSave = JSON.stringify(currentData);
-      localStorage.setItem(USER_DATA_KEY, dataToSave);
+      localStorage.setItem(USER_DATA_KEY, JSON.stringify(currentData));
       
       // Verify the save was successful
       const savedData = localStorage.getItem(USER_DATA_KEY);
@@ -87,10 +86,6 @@ export const fileStorage = {
       
       const foundUser = Object.values(data.users).find(user => user.pin === pin);
       console.log('Found user:', foundUser);
-      
-      if (!foundUser) {
-        console.log('No user account found in storage');
-      }
       
       return foundUser || null;
     } catch (error) {
