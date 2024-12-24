@@ -1,32 +1,16 @@
+import { fileStorage } from './fileStorage';
 import type { User } from '@/types/auth';
-
-const USER_STORAGE_KEY = 'secure_dex_user';
 
 export const storage = {
   getUser: (): User | null => {
     try {
-      const userData = localStorage.getItem(USER_STORAGE_KEY);
-      console.log('Raw user data from storage:', userData);
-      
-      if (!userData) {
-        console.log('No user data found in storage');
-        return null;
-      }
-
-      const parsedUser = JSON.parse(userData);
-      
-      // Validate user data structure
-      if (!parsedUser.id || !parsedUser.pin || !Array.isArray(parsedUser.wallets)) {
-        console.error('Invalid user data structure in storage');
-        localStorage.removeItem(USER_STORAGE_KEY);
-        return null;
-      }
-
-      console.log('Parsed user data:', parsedUser);
-      return parsedUser;
+      // Get the first user found (for now we support single user)
+      const users = Object.values(fileStorage.getAllData().users);
+      const user = users[0];
+      console.log('Retrieved user from storage:', user);
+      return user || null;
     } catch (error) {
-      console.error('Error reading user data from localStorage:', error);
-      localStorage.removeItem(USER_STORAGE_KEY);
+      console.error('Error reading user data:', error);
       return null;
     }
   },
@@ -38,21 +22,26 @@ export const storage = {
         throw new Error('Invalid user data');
       }
 
-      const userString = JSON.stringify(user);
-      localStorage.setItem(USER_STORAGE_KEY, userString);
-      console.log('Successfully saved user data:', userString);
+      const success = fileStorage.saveUser(user);
+      if (!success) {
+        throw new Error('Failed to save user data');
+      }
+      console.log('Successfully saved user data:', user);
     } catch (error) {
-      console.error('Error saving user data to localStorage:', error);
+      console.error('Error saving user data:', error);
       throw error;
     }
   },
   
   removeUser: (): void => {
     try {
-      localStorage.removeItem(USER_STORAGE_KEY);
-      console.log('Successfully removed user data from storage');
+      const user = storage.getUser();
+      if (user) {
+        fileStorage.deleteUser(user.id);
+      }
+      console.log('Successfully removed user data');
     } catch (error) {
-      console.error('Error removing user data from localStorage:', error);
+      console.error('Error removing user data:', error);
       throw error;
     }
   }

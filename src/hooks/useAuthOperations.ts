@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { generateWallet } from '@/utils/walletUtils';
 import { storage } from '@/utils/localStorage';
+import { fileStorage } from '@/utils/fileStorage';
 import type { User } from '@/types/auth';
 
 export const useAuthOperations = () => {
@@ -14,6 +15,11 @@ export const useAuthOperations = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Initialize storage on component mount
+    fileStorage.init();
+  }, []);
+
+  useEffect(() => {
     if (user) {
       storage.setUser(user);
       console.log('Updated user in storage:', user);
@@ -22,7 +28,6 @@ export const useAuthOperations = () => {
 
   const createAccount = async (pin: string) => {
     try {
-      // Validate PIN
       if (!pin || pin.length < 6) {
         toast.error('PIN must be at least 6 characters long');
         throw new Error('Invalid PIN');
@@ -31,7 +36,6 @@ export const useAuthOperations = () => {
       const userId = crypto.randomUUID();
       const defaultWalletName = "My Wallet";
       
-      // Generate wallets with proper error handling
       const [ethWallet, usdtWallet, btcWallet] = await Promise.all([
         generateWallet('ETH', `${defaultWalletName} - ETH`),
         generateWallet('USDT', `${defaultWalletName} - USDT`),
@@ -45,9 +49,7 @@ export const useAuthOperations = () => {
         transactions: [],
       };
 
-      // Save to storage first
       storage.setUser(newUser);
-      // Then update state
       setUser(newUser);
       
       console.log('New account created:', newUser);
@@ -62,30 +64,23 @@ export const useAuthOperations = () => {
 
   const login = async (pin: string) => {
     try {
-      // Validate PIN
       if (!pin || pin.length < 6) {
         toast.error('PIN must be at least 6 characters long');
         throw new Error('Invalid PIN');
       }
 
       console.log('Attempting login with PIN:', pin);
-      const storedUser = storage.getUser();
-      console.log('Retrieved user data for login:', storedUser);
+      const userData = fileStorage.getUserByPin(pin);
+      console.log('Retrieved user data for login:', userData);
 
-      if (!storedUser) {
+      if (!userData) {
         console.log('No user account found in storage');
         toast.error('No account found. Please create one first.');
         throw new Error('No account found');
       }
 
-      if (storedUser.pin !== pin) {
-        console.log('PIN mismatch - Stored:', storedUser.pin, 'Entered:', pin);
-        toast.error('Invalid PIN');
-        throw new Error('Invalid PIN');
-      }
-
-      setUser(storedUser);
-      console.log('Login successful:', storedUser);
+      setUser(userData);
+      console.log('Login successful:', userData);
       toast.success('Login successful!');
       navigate('/wallet-dashboard');
     } catch (error) {
