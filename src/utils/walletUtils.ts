@@ -4,7 +4,6 @@ import * as ecc from 'tiny-secp256k1';
 import ECPairFactory from 'ecpair';
 import { Buffer } from 'buffer';
 
-// Initialize Bitcoin-related libraries
 const ECPair = ECPairFactory(ecc);
 bitcoin.initEccLib(ecc);
 
@@ -34,7 +33,6 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT', name: stri
       };
     }
     case 'BTC': {
-      // Generate Bitcoin mainnet wallet using P2WPKH (native SegWit)
       const keyPair = ECPair.makeRandom();
       const pubkeyBuffer = Buffer.from(keyPair.publicKey);
       const { address } = bitcoin.payments.p2wpkh({
@@ -63,14 +61,14 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT', name: stri
 
 export const updateWalletBalance = async (wallet: WalletData): Promise<string> => {
   try {
+    const provider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/MQZMImq0qheNPI5hgiQGJ1fRipVvrfbH');
+    
     switch (wallet.network) {
       case 'ETH': {
-        const provider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/demo');
         const balance = await provider.getBalance(wallet.address);
         return ethers.formatEther(balance);
       }
       case 'USDT': {
-        const provider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/demo');
         const usdtContract = new ethers.Contract(
           '0xdac17f958d2ee523a2206206994597c13d831ec7',
           ['function balanceOf(address) view returns (uint256)'],
