@@ -1,6 +1,5 @@
 import type { User } from '@/types/auth';
-
-const USER_DATA_KEY = 'secure_dex_user_data';
+import { StorageKeys } from './storageKeys';
 
 interface StoredData {
   users: Record<string, User>;
@@ -10,110 +9,108 @@ const initialData: StoredData = {
   users: {}
 };
 
-export const fileStorage = {
-  init: () => {
+class FileStorageService {
+  private getStorageData(): StoredData {
+    const data = localStorage.getItem(StorageKeys.USER_DATA);
+    if (!data) {
+      this.initializeStorage();
+      return initialData;
+    }
+    return JSON.parse(data) as StoredData;
+  }
+
+  private setStorageData(data: StoredData): void {
+    localStorage.setItem(StorageKeys.USER_DATA, JSON.stringify(data));
+  }
+
+  private initializeStorage(): void {
+    if (!localStorage.getItem(StorageKeys.USER_DATA)) {
+      this.setStorageData(initialData);
+      console.log('Initialized empty user data storage');
+    }
+  }
+
+  init(): void {
     try {
-      const existingData = localStorage.getItem(USER_DATA_KEY);
-      if (!existingData) {
-        localStorage.setItem(USER_DATA_KEY, JSON.stringify(initialData));
-        console.log('Initialized empty user data storage');
-      } else {
-        console.log('Existing storage found:', JSON.parse(existingData));
-      }
+      this.initializeStorage();
     } catch (error) {
       console.error('Error initializing storage:', error);
     }
-  },
+  }
 
-  getAllData: (): StoredData => {
+  getAllData(): StoredData {
     try {
-      const data = localStorage.getItem(USER_DATA_KEY);
-      if (!data) {
-        console.log('No data found, initializing storage');
-        fileStorage.init();
-        return initialData;
-      }
-      const parsedData = JSON.parse(data) as StoredData;
-      console.log('Retrieved storage data:', parsedData);
-      return parsedData;
+      return this.getStorageData();
     } catch (error) {
       console.error('Error getting data:', error);
       return initialData;
     }
-  },
+  }
 
-  saveUser: (userData: User): boolean => {
+  saveUser(userData: User): boolean {
     try {
-      console.log('Attempting to save user:', userData);
-      
-      // Initialize storage if needed
-      if (!localStorage.getItem(USER_DATA_KEY)) {
-        fileStorage.init();
-      }
-      
-      const currentData = fileStorage.getAllData();
+      const currentData = this.getStorageData();
       currentData.users[userData.id] = userData;
+      this.setStorageData(currentData);
       
-      // Save the updated data
-      localStorage.setItem(USER_DATA_KEY, JSON.stringify(currentData));
+      // Verify save was successful
+      const savedData = this.getStorageData();
+      const userSaved = !!savedData.users[userData.id];
+      console.log('User save verification:', userSaved);
       
-      // Verify the save was successful
-      const savedData = localStorage.getItem(USER_DATA_KEY);
-      console.log('Verification - Saved data:', JSON.parse(savedData || '{}'));
-      
-      return true;
+      return userSaved;
     } catch (error) {
       console.error('Error saving user data:', error);
       return false;
     }
-  },
+  }
 
-  getUser: (userId: string): User | null => {
+  getUser(userId: string): User | null {
     try {
-      const data = fileStorage.getAllData();
+      const data = this.getStorageData();
       return data.users[userId] || null;
     } catch (error) {
       console.error('Error getting user:', error);
       return null;
     }
-  },
+  }
 
-  getUserByPin: (pin: string): User | null => {
+  getUserByPin(pin: string): User | null {
     try {
-      const data = fileStorage.getAllData();
-      console.log('Looking for user with PIN:', pin);
-      console.log('Current stored users:', data.users);
-      
+      const data = this.getStorageData();
       const foundUser = Object.values(data.users).find(user => user.pin === pin);
-      console.log('Found user:', foundUser);
-      
+      console.log('Found user by PIN:', foundUser);
       return foundUser || null;
     } catch (error) {
       console.error('Error finding user by PIN:', error);
       return null;
     }
-  },
+  }
 
-  deleteUser: (userId: string): boolean => {
+  deleteUser(userId: string): boolean {
     try {
-      console.log('Deleting user:', userId);
-      const currentData = fileStorage.getAllData();
+      const currentData = this.getStorageData();
+      if (!currentData.users[userId]) {
+        return false;
+      }
       delete currentData.users[userId];
-      localStorage.setItem(USER_DATA_KEY, JSON.stringify(currentData));
+      this.setStorageData(currentData);
       return true;
     } catch (error) {
       console.error('Error deleting user:', error);
       return false;
     }
-  },
+  }
 
-  clearAll: () => {
+  clearAll(): void {
     try {
-      localStorage.removeItem(USER_DATA_KEY);
-      fileStorage.init();
+      localStorage.removeItem(StorageKeys.USER_DATA);
+      this.initializeStorage();
       console.log('Cleared all user data');
     } catch (error) {
       console.error('Error clearing data:', error);
     }
   }
-};
+}
+
+export const fileStorage = new FileStorageService();

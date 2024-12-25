@@ -1,8 +1,8 @@
 import { fileStorage } from './fileStorage';
 import type { User } from '@/types/auth';
 
-export const storage = {
-  getUser: (): User | null => {
+class LocalStorageService {
+  getUser(): User | null {
     try {
       const data = fileStorage.getAllData();
       const users = Object.values(data.users);
@@ -13,12 +13,11 @@ export const storage = {
       console.error('Error reading user data:', error);
       return null;
     }
-  },
+  }
   
-  setUser: (user: User): void => {
+  setUser(user: User): void {
     try {
-      if (!user || !user.id || !user.pin || !Array.isArray(user.wallets)) {
-        console.error('Attempted to save invalid user data');
+      if (!this.validateUserData(user)) {
         throw new Error('Invalid user data');
       }
 
@@ -31,13 +30,12 @@ export const storage = {
       console.error('Error saving user data:', error);
       throw error;
     }
-  },
+  }
   
-  removeUser: (): void => {
+  removeUser(): void {
     try {
-      const user = storage.getUser();
+      const user = this.getUser();
       if (user) {
-        // Instead of clearing all data, just remove the specific user
         const success = fileStorage.deleteUser(user.id);
         if (!success) {
           throw new Error('Failed to remove user data');
@@ -49,4 +47,10 @@ export const storage = {
       throw error;
     }
   }
-};
+
+  private validateUserData(user: User): boolean {
+    return !!(user && user.id && user.pin && Array.isArray(user.wallets));
+  }
+}
+
+export const storage = new LocalStorageService();
