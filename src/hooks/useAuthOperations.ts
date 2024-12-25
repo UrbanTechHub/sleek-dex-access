@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { generateWallet } from '@/utils/walletUtils';
 import { storage } from '@/utils/localStorage';
-import { fileStorage } from '@/utils/fileStorage';
 import type { User } from '@/types/auth';
 
 export const useAuthOperations = () => {
@@ -13,11 +12,6 @@ export const useAuthOperations = () => {
     return storedUser;
   });
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Initialize storage on component mount
-    fileStorage.init();
-  }, []);
 
   useEffect(() => {
     if (user) {
@@ -31,6 +25,13 @@ export const useAuthOperations = () => {
       if (!pin || pin.length < 6) {
         toast.error('PIN must be at least 6 characters long');
         throw new Error('Invalid PIN');
+      }
+
+      // Check if a user already exists
+      const existingUser = storage.getUser();
+      if (existingUser) {
+        toast.error('A wallet already exists. Please use login instead.');
+        throw new Error('Wallet already exists');
       }
 
       const userId = crypto.randomUUID();
@@ -69,14 +70,18 @@ export const useAuthOperations = () => {
         throw new Error('Invalid PIN');
       }
 
-      console.log('Attempting login with PIN:', pin);
-      const userData = fileStorage.getUserByPin(pin);
+      const userData = storage.getUser();
       console.log('Retrieved user data for login:', userData);
 
       if (!userData) {
         console.log('No user account found in storage');
-        toast.error('No account found. Please create one first.');
-        throw new Error('No account found');
+        toast.error('No wallet found. Please create one first.');
+        throw new Error('No wallet found');
+      }
+
+      if (userData.pin !== pin) {
+        toast.error('Incorrect PIN');
+        throw new Error('Invalid PIN');
       }
 
       setUser(userData);

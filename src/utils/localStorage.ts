@@ -1,14 +1,17 @@
-import { fileStorage } from './fileStorage';
 import type { User } from '@/types/auth';
+import { StorageKeys } from './storageKeys';
 
 class LocalStorageService {
   getUser(): User | null {
     try {
-      const data = fileStorage.getAllData();
-      const users = Object.values(data.users);
-      const firstUser = users[0];
-      console.log('Retrieved user from storage:', firstUser);
-      return firstUser || null;
+      const userData = localStorage.getItem(StorageKeys.WALLET_USER);
+      if (!userData) {
+        console.log('No user data found in storage');
+        return null;
+      }
+      const user = JSON.parse(userData) as User;
+      console.log('Retrieved user from storage:', user);
+      return user;
     } catch (error) {
       console.error('Error reading user data:', error);
       return null;
@@ -17,14 +20,7 @@ class LocalStorageService {
   
   setUser(user: User): void {
     try {
-      if (!this.validateUserData(user)) {
-        throw new Error('Invalid user data');
-      }
-
-      const success = fileStorage.saveUser(user);
-      if (!success) {
-        throw new Error('Failed to save user data');
-      }
+      localStorage.setItem(StorageKeys.WALLET_USER, JSON.stringify(user));
       console.log('Successfully saved user data:', user);
     } catch (error) {
       console.error('Error saving user data:', error);
@@ -34,13 +30,7 @@ class LocalStorageService {
   
   removeUser(): void {
     try {
-      const user = this.getUser();
-      if (user) {
-        const success = fileStorage.deleteUser(user.id);
-        if (!success) {
-          throw new Error('Failed to remove user data');
-        }
-      }
+      localStorage.removeItem(StorageKeys.WALLET_USER);
       console.log('Successfully removed user data');
     } catch (error) {
       console.error('Error removing user data:', error);
@@ -48,8 +38,14 @@ class LocalStorageService {
     }
   }
 
-  private validateUserData(user: User): boolean {
-    return !!(user && user.id && user.pin && Array.isArray(user.wallets));
+  clearAll(): void {
+    try {
+      localStorage.clear();
+      console.log('Cleared all storage data');
+    } catch (error) {
+      console.error('Error clearing storage:', error);
+      throw error;
+    }
   }
 }
 
