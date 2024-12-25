@@ -27,9 +27,17 @@ class LocalStorageService {
         throw new Error('Invalid user data structure');
       }
       
-      // Force synchronous write to localStorage
-      window.localStorage.setItem(this.STORAGE_KEY, JSON.stringify(user));
-      console.log('Successfully saved user data:', user);
+      // Ensure we're storing the complete user object
+      const userToStore = {
+        ...user,
+        wallets: user.wallets.map(wallet => ({
+          ...wallet,
+          lastUpdated: new Date()
+        }))
+      };
+      
+      window.localStorage.setItem(this.STORAGE_KEY, JSON.stringify(userToStore));
+      console.log('Successfully saved user data:', userToStore);
     } catch (error) {
       console.error('Error saving user data:', error);
       throw error;
@@ -57,7 +65,9 @@ class LocalStorageService {
   }
 
   hasExistingWallet(): boolean {
-    return this.getUser() !== null;
+    const user = this.getUser();
+    console.log('Checking for existing wallet:', user !== null);
+    return user !== null;
   }
 }
 

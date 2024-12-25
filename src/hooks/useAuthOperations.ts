@@ -48,6 +48,7 @@ export const useAuthOperations = () => {
         transactions: [],
       };
 
+      // First set in storage, then update state
       storage.setUser(newUser);
       setUser(newUser);
       
@@ -94,7 +95,6 @@ export const useAuthOperations = () => {
 
   const logout = async () => {
     try {
-      storage.removeUser();
       setUser(null);
       console.log('User logged out successfully');
       navigate('/');
