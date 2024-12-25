@@ -27,9 +27,7 @@ export const useAuthOperations = () => {
         throw new Error('Invalid PIN');
       }
 
-      // Check if a user already exists
-      const existingUser = storage.getUser();
-      if (existingUser) {
+      if (storage.hasExistingWallet()) {
         toast.error('A wallet already exists. Please use login instead.');
         throw new Error('Wallet already exists');
       }
