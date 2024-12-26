@@ -91,23 +91,28 @@ export const updateWalletBalance = async (wallet: WalletData): Promise<string> =
         const balance = await usdtContract.balanceOf(wallet.address);
         return ethers.formatUnits(balance, 6);
       }
-      case 'USDC': {
-        const usdcContract = new ethers.Contract(
-          '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-          ['function balanceOf(address) view returns (uint256)'],
-          provider
-        );
-        const balance = await usdcContract.balanceOf(wallet.address);
-        return ethers.formatUnits(balance, 6);
-      }
       case 'SOL': {
         const publicKey = new PublicKey(wallet.address);
         const balance = await solanaConnection.getBalance(publicKey);
         return (balance / 1e9).toString();
       }
+      case 'USDC': {
+        const publicKey = new PublicKey(wallet.address);
+        const tokenAccounts = await solanaConnection.getParsedTokenAccountsByOwner(publicKey, {
+          programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+        });
+        let balance = '0';
+        for (const account of tokenAccounts.value) {
+          if (account.account.data.parsed.info.mint === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v') { // USDC mint address
+            balance = (account.account.data.parsed.info.tokenAmount.uiAmount || 0).toString();
+            break;
+          }
+        }
+        return balance;
+      }
       case 'BTC':
-        // For demonstration purposes
-        return wallet.balance || '0';
+        // For demonstration purposes, returning stored balance
+        return wallet.balance;
       default:
         return '0';
     }
