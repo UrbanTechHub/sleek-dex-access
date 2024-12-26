@@ -1,6 +1,6 @@
 export interface Wallet {
   id: string;
-  network: 'ETH' | 'BTC' | 'USDT';
+  network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | 'USDC';
   address: string;
   balance: string;
 }

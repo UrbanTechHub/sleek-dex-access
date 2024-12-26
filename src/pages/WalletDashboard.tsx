@@ -110,6 +110,17 @@ const WalletDashboard = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+      toast.success('Logged out successfully');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to logout');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary p-6 space-y-8">
       <div className="max-w-7xl mx-auto">
