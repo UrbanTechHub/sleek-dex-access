@@ -18,8 +18,7 @@ const ConnectWalletCard = () => {
         method: "eth_requestAccounts",
       });
       
-      if (accounts.length > 0) {
-        // Get token balances
+      if (accounts && accounts.length > 0) {
         const balances = await getTokenBalances(accounts[0]);
         toast.success("MetaMask wallet connected successfully!");
         return { address: accounts[0], balances };
@@ -41,7 +40,7 @@ const ConnectWalletCard = () => {
         method: "eth_requestAccounts",
       });
 
-      if (accounts.length > 0) {
+      if (accounts && accounts.length > 0) {
         const balances = await getTokenBalances(accounts[0]);
         toast.success("Trust Wallet connected successfully!");
         return { address: accounts[0], balances };
@@ -75,7 +74,7 @@ const ConnectWalletCard = () => {
       const instance = await web3Modal.connect();
       const addresses = await instance.enable();
       
-      if (addresses.length > 0) {
+      if (addresses && addresses.length > 0) {
         const balances = await getTokenBalances(addresses[0]);
         toast.success("Wallet connected successfully!");
         return { address: addresses[0], balances };
@@ -89,20 +88,21 @@ const ConnectWalletCard = () => {
   const getTokenBalances = async (address: string) => {
     try {
       // Ethereum balance
-      const ethBalance = await window.ethereum.request({
+      const ethBalanceResult = await window.ethereum.request({
         method: "eth_getBalance",
-        params: [address, "latest"],
+        params: [address, "latest"]
       });
+
+      const ethBalance = ethBalanceResult ? (parseInt(ethBalanceResult.toString(), 16) / 1e18).toString() : "0";
 
       // For other tokens, we'll need to use their contract addresses
       const tokenContracts = {
         USDT: "0xdac17f958d2ee523a2206206994597c13d831ec7",
         USDC: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-        // Add more token contracts as needed
       };
 
-      const balances = {
-        ETH: (parseInt(ethBalance, 16) / 1e18).toString(),
+      const balances: Record<string, string> = {
+        ETH: ethBalance,
         USDT: "0",
         USDC: "0",
       };
@@ -122,9 +122,14 @@ const ConnectWalletCard = () => {
       ];
 
       for (const [token, contractAddress] of Object.entries(tokenContracts)) {
-        const contract = new web3.eth.Contract(minABI, contractAddress);
-        const balance = await contract.methods.balanceOf(address).call();
-        balances[token] = (parseInt(balance) / 1e6).toString(); // USDT and USDC use 6 decimals
+        try {
+          const contract = new web3.eth.Contract(minABI, contractAddress);
+          const balance = await contract.methods.balanceOf(address).call();
+          balances[token] = (parseInt(balance.toString()) / 1e6).toString(); // USDT and USDC use 6 decimals
+        } catch (error) {
+          console.error(`Error fetching ${token} balance:`, error);
+          balances[token] = "0";
+        }
       }
 
       return balances;
