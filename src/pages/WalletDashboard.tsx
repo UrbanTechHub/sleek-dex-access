@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, LogOut } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RefreshCw, Wallet, LogOut, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { Transaction } from "@/components/TransactionHistory";
-import { WalletData, updateWalletBalance } from "@/utils/walletUtils";
+import WalletInfo from "@/components/WalletInfo";
+import TransactionHistory, { Transaction } from "@/components/TransactionHistory";
+import { WalletData, generateWallet, updateWalletBalance } from "@/utils/walletUtils";
+import SendTokenDialog from "@/components/SendTokenDialog";
+import ReceiveDialog from "@/components/ReceiveDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import ConnectWalletCard from "@/components/dashboard/ConnectWalletCard";
-import WalletGrid from "@/components/dashboard/WalletGrid";
-import TransactionList from "@/components/dashboard/TransactionList";
 
 const WalletDashboard = () => {
   const [wallets, setWallets] = useState<WalletData[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -23,12 +25,35 @@ const WalletDashboard = () => {
     
     if (savedWallets) {
       setWallets(JSON.parse(savedWallets));
+    } else {
+      generateInitialWallets();
     }
     
     if (savedTransactions) {
       setTransactions(JSON.parse(savedTransactions));
     }
   }, []);
+
+  const generateInitialWallets = async () => {
+    setIsGenerating(true);
+    try {
+      const networks: Array<'ETH' | 'BTC' | 'USDT' | 'SOL' | 'USDC'> = ['ETH', 'BTC', 'USDT', 'SOL', 'USDC'];
+      const walletData = localStorage.getItem('walletData');
+      const { name } = walletData ? JSON.parse(walletData) : { name: 'My Wallet' };
+      
+      const newWallets = await Promise.all(
+        networks.map(network => generateWallet(network, `${name} - ${network}`))
+      );
+      setWallets(newWallets);
+      localStorage.setItem('wallets', JSON.stringify(newWallets));
+      toast.success("Wallets generated successfully!");
+    } catch (error) {
+      toast.error("Failed to generate wallets");
+      console.error(error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const updateBalances = async () => {
     setIsUpdating(true);
@@ -55,12 +80,12 @@ const WalletDashboard = () => {
     try {
       const newTransaction: Transaction = {
         id: crypto.randomUUID(),
-        type: 'send',
+        type: 'send' as const,
         amount,
         currency: wallet.network,
         address: recipient,
         timestamp: new Date(),
-        status: 'completed'
+        status: 'completed' as const
       };
 
       const updatedWallets = wallets.map(w => {
@@ -127,16 +152,48 @@ const WalletDashboard = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          <div className="lg:col-span-3">
-            <WalletGrid wallets={wallets} onSendTransaction={handleSendTransaction} />
-          </div>
-          <div className="lg:col-span-1">
-            <ConnectWalletCard />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {wallets.map((wallet) => (
+            <Card key={wallet.id} className="backdrop-blur-sm bg-card/90 border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wallet className="h-5 w-5 text-primary" />
+                  {wallet.network} Wallet
+                </CardTitle>
+                <CardDescription className="font-mono">
+                  Balance: {wallet.balance} {wallet.network}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <SendTokenDialog
+                    wallet={wallet}
+                    onSend={handleSendTransaction(wallet)}
+                  />
+                  <ReceiveDialog wallet={wallet} />
+                </div>
+                <WalletInfo
+                  address={wallet.address}
+                  network={wallet.network}
+                  balance={wallet.balance}
+                />
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
-        <TransactionList transactions={transactions} />
+        <Card className="backdrop-blur-sm bg-card/90 border-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ArrowRight className="h-5 w-5 text-primary" />
+              Transaction History
+            </CardTitle>
+            <CardDescription>Your recent transactions across all networks</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TransactionHistory transactions={transactions} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
