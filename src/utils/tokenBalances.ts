@@ -7,6 +7,11 @@ interface TokenBalances {
   USDC: string;
 }
 
+interface EthereumRequest {
+  method: string;
+  params?: any[];
+}
+
 export const getTokenBalances = async (address: string): Promise<TokenBalances | null> => {
   try {
     if (!window.ethereum) {
@@ -14,12 +19,15 @@ export const getTokenBalances = async (address: string): Promise<TokenBalances |
     }
 
     // Ethereum balance
-    const ethBalanceResult = await window.ethereum.request({
+    const request: EthereumRequest = {
       method: 'eth_getBalance',
       params: [address, 'latest']
-    });
+    };
 
-    const ethBalance = ethBalanceResult ? (parseInt(ethBalanceResult.toString(), 16) / 1e18).toString() : "0";
+    const ethBalanceResult = await window.ethereum.request(request);
+    const ethBalance = ethBalanceResult ? 
+      (parseInt(ethBalanceResult.toString(), 16) / 1e18).toString() : 
+      "0";
 
     // Token contract addresses
     const tokenContracts = {
@@ -48,7 +56,9 @@ export const getTokenBalances = async (address: string): Promise<TokenBalances |
       try {
         const contract = new web3.eth.Contract(minABI, contractAddress);
         const balance = await contract.methods.balanceOf(address).call();
-        balances[token as keyof TokenBalances] = (parseInt(balance.toString()) / 1e6).toString();
+        if (balance) {
+          balances[token as keyof TokenBalances] = (parseInt(balance.toString()) / 1e6).toString();
+        }
       } catch (error) {
         console.error(`Error fetching ${token} balance:`, error);
       }
