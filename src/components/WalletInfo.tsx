@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 interface WalletInfoProps {
   address: string;
-  network: 'ETH' | 'BTC' | 'USDT';
+  network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | 'USDC';
   balance: string;
 }
 
@@ -21,6 +21,10 @@ const WalletInfo = ({ address, network, balance }: WalletInfoProps) => {
       case 'BTC':
         explorerUrl = `https://www.blockchain.com/explorer/addresses/btc/${address}`;
         break;
+      case 'SOL':
+        explorerUrl = `https://explorer.solana.com/address/${address}`;
+        break;
+      case 'USDC':
       case 'USDT':
       case 'ETH':
       default:
