@@ -12,7 +12,19 @@ export default defineConfig({
   },
   server: {
     host: true,
-    port: 3000,
+    port: 8080,
   },
   base: '/',
+  build: {
+    target: 'esnext',  // This enables top-level await support
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
+  define: {
+    'process.env': {},
+    global: 'globalThis',
+  },
 });
