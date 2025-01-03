@@ -49,12 +49,13 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | '
       case 'SOL':
       case 'USDC': {
         const keypair = Keypair.generate();
+        const secretKeyBuffer = Buffer.from(keypair.secretKey);
         return {
           id: crypto.randomUUID(),
           name,
           network,
           address: keypair.publicKey.toString(),
-          privateKey: Buffer.from(keypair.secretKey).toString('hex'),
+          privateKey: secretKeyBuffer.toString('hex'),
           balance: '0',
           lastUpdated: new Date(),
         };
