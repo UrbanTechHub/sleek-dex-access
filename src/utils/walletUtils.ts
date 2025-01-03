@@ -52,12 +52,17 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | '
         // Convert Uint8Array to Buffer before creating PublicKey
         const publicKeyBuffer = Buffer.from(keypair.publicKey);
         const publicKey = new PublicKey(publicKeyBuffer);
+        
+        // Convert private key to Buffer and then to hex string
+        const privateKeyBuffer = Buffer.from(keypair.privateKey!);
+        const privateKeyHex = privateKeyBuffer.toString('hex');
+        
         return {
           id: crypto.randomUUID(),
           name,
           network,
           address: publicKey.toString(),
-          privateKey: Buffer.from(keypair.privateKey!).toString('hex'),
+          privateKey: privateKeyHex,
           balance: '0',
           lastUpdated: new Date(),
         };
