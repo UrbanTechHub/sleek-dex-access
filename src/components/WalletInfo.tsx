@@ -55,6 +55,12 @@ const WalletInfo = ({ address, network, balance }: WalletInfoProps) => {
     }
   };
 
+  const formatBalance = (balance: string, network: string) => {
+    const num = parseFloat(balance);
+    if (isNaN(num)) return '0.00';
+    return num.toFixed(network === 'SOL' ? 9 : 4);
+  };
+
   return (
     <Card className={`bg-gradient-to-br ${getNetworkColor()} text-white shadow-xl hover:shadow-2xl transition-all duration-300`}>
       <CardHeader>
@@ -64,7 +70,9 @@ const WalletInfo = ({ address, network, balance }: WalletInfoProps) => {
             <Copy className="h-4 w-4" />
           </Button>
         </CardTitle>
-        <CardDescription className="text-white/90">Balance: {balance} {network}</CardDescription>
+        <CardDescription className="text-white/90">
+          Balance: {formatBalance(balance, network)} {network}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
         <p className="text-sm font-mono break-all bg-black/20 p-2 rounded">{address}</p>

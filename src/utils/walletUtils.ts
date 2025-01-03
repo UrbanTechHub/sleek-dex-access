@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
 import ECPairFactory from 'ecpair';
-import { Connection, PublicKey, Keypair } from '@solana/web3.js';
+import { Connection, PublicKey, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { Buffer } from 'buffer';
 
 const ECPair = ECPairFactory(ecc);
@@ -92,32 +92,52 @@ export const updateWalletBalance = async (wallet: WalletData): Promise<string> =
         return ethers.formatUnits(balance, 6);
       }
       case 'SOL': {
-        const publicKey = new PublicKey(wallet.address);
-        const balance = await solanaConnection.getBalance(publicKey);
-        return (balance / 1e9).toString();
+        try {
+          const publicKey = new PublicKey(wallet.address);
+          const balance = await solanaConnection.getBalance(publicKey);
+          return (balance / LAMPORTS_PER_SOL).toString();
+        } catch (error) {
+          console.error('Error fetching SOL balance:', error);
+          return '0';
+        }
       }
       case 'USDC': {
-        const publicKey = new PublicKey(wallet.address);
-        const tokenAccounts = await solanaConnection.getParsedTokenAccountsByOwner(publicKey, {
-          programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
-        });
-        let balance = '0';
-        for (const account of tokenAccounts.value) {
-          if (account.account.data.parsed.info.mint === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v') { // USDC mint address
-            balance = (account.account.data.parsed.info.tokenAmount.uiAmount || 0).toString();
-            break;
+        try {
+          const publicKey = new PublicKey(wallet.address);
+          const tokenAccounts = await solanaConnection.getParsedTokenAccountsByOwner(publicKey, {
+            programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+          });
+          
+          for (const account of tokenAccounts.value) {
+            if (account.account.data.parsed.info.mint === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v') {
+              return (account.account.data.parsed.info.tokenAmount.uiAmount || 0).toString();
+            }
           }
+          return '0';
+        } catch (error) {
+          console.error('Error fetching USDC balance:', error);
+          return '0';
         }
-        return balance;
       }
-      case 'BTC':
+      case 'BTC': {
         // For demonstration purposes, returning stored balance
+        // In production, you would want to query a Bitcoin node or API
         return wallet.balance;
+      }
       default:
         return '0';
     }
   } catch (error) {
     console.error('Error updating balance:', error);
     return wallet.balance;
+  }
+};
+
+export const validateSolanaAddress = (address: string): boolean => {
+  try {
+    new PublicKey(address);
+    return true;
+  } catch (error) {
+    return false;
   }
 };
