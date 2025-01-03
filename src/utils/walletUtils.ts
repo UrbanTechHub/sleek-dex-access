@@ -3,7 +3,7 @@ import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
 import ECPairFactory from 'ecpair';
 import { Connection, PublicKey, LAMPORTS_PER_SOL, clusterApiUrl, Keypair } from '@solana/web3.js';
-import { Buffer } from 'buffer';
+import { bs58 } from 'bs58';
 import { toast } from "sonner";
 
 const ECPair = ECPairFactory(ecc);
@@ -49,13 +49,14 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | '
       case 'SOL':
       case 'USDC': {
         const keypair = Keypair.generate();
-        const secretKeyBuffer = Buffer.from(keypair.secretKey);
+        // Use base58 encoding for the private key instead of Buffer
+        const privateKeyBase58 = bs58.encode(keypair.secretKey);
         return {
           id: crypto.randomUUID(),
           name,
           network,
           address: keypair.publicKey.toString(),
-          privateKey: secretKeyBuffer.toString('hex'),
+          privateKey: privateKeyBase58,
           balance: '0',
           lastUpdated: new Date(),
         };
