@@ -11,7 +11,24 @@ class LocalStorageService {
         console.log('No user data found in storage');
         return null;
       }
-      const user = JSON.parse(userData) as User;
+      const parsedData = JSON.parse(userData);
+      
+      // Convert string timestamps to Date objects
+      if (parsedData.transactions) {
+        parsedData.transactions = parsedData.transactions.map((tx: any) => ({
+          ...tx,
+          timestamp: new Date(tx.timestamp)
+        }));
+      }
+      
+      if (parsedData.wallets) {
+        parsedData.wallets = parsedData.wallets.map((wallet: any) => ({
+          ...wallet,
+          lastUpdated: new Date(wallet.lastUpdated)
+        }));
+      }
+      
+      const user = parsedData as User;
       console.log('Retrieved user from storage:', user);
       return user;
     } catch (error) {

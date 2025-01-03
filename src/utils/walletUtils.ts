@@ -49,7 +49,7 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | '
       case 'SOL':
       case 'USDC': {
         const keypair = ECPair.makeRandom();
-        const publicKey = new PublicKey(keypair.publicKey);
+        const publicKey = new PublicKey(Buffer.from(keypair.publicKey));
         return {
           id: crypto.randomUUID(),
           name,

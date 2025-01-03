@@ -1,8 +1,11 @@
 export interface Wallet {
   id: string;
+  name: string;
   network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | 'USDC';
   address: string;
+  privateKey: string;
   balance: string;
+  lastUpdated: Date;
 }
 
 export interface Transaction {
@@ -11,8 +14,9 @@ export interface Transaction {
   amount: string;
   currency: string;
   address: string;
-  timestamp: string;
+  timestamp: Date;
   status: 'pending' | 'completed' | 'failed';
+  network?: 'ETH' | 'BTC' | 'USDT' | 'SOL' | 'USDC';
 }
 
 export interface User {
