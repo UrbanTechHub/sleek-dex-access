@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
 import ECPairFactory from 'ecpair';
-import { Connection, PublicKey, LAMPORTS_PER_SOL, clusterApiUrl } from '@solana/web3.js';
+import { Connection, PublicKey, LAMPORTS_PER_SOL, clusterApiUrl, Keypair } from '@solana/web3.js';
 import { Buffer } from 'buffer';
 import { toast } from "sonner";
 
@@ -48,21 +48,13 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | '
       }
       case 'SOL':
       case 'USDC': {
-        const keypair = ECPair.makeRandom();
-        // Convert Uint8Array to Buffer before creating PublicKey
-        const publicKeyBuffer = Buffer.from(keypair.publicKey);
-        const publicKey = new PublicKey(publicKeyBuffer);
-        
-        // Convert private key to Buffer and then to hex string
-        const privateKeyBuffer = Buffer.from(keypair.privateKey!);
-        const privateKeyHex = privateKeyBuffer.toString('hex');
-        
+        const keypair = Keypair.generate();
         return {
           id: crypto.randomUUID(),
           name,
           network,
-          address: publicKey.toString(),
-          privateKey: privateKeyHex,
+          address: keypair.publicKey.toString(),
+          privateKey: Buffer.from(keypair.secretKey).toString('hex'),
           balance: '0',
           lastUpdated: new Date(),
         };
