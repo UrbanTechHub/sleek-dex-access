@@ -3,6 +3,7 @@ import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
 import ECPairFactory from 'ecpair';
 import { toast } from "sonner";
+import { Buffer } from 'buffer';
 
 const ECPair = ECPairFactory(ecc);
 bitcoin.initEccLib(ecc);
@@ -43,7 +44,7 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT', name: stri
       case 'BTC': {
         const keyPair = ECPair.makeRandom();
         const { address } = bitcoin.payments.p2wpkh({
-          pubkey: keyPair.publicKey,
+          pubkey: Buffer.from(keyPair.publicKey),
           network: bitcoin.networks.bitcoin
         });
 
