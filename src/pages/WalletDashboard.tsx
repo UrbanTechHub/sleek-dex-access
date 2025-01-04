@@ -17,19 +17,23 @@ const WalletDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user?.wallets) {
-      setWallets(user.wallets);
-      void updateAllBalances();
+    if (!user) {
+      navigate('/');
+      return;
     }
-  }, [user]);
+
+    console.log('Setting wallets from user:', user.wallets);
+    setWallets(user.wallets || []);
+    void updateAllBalances();
+  }, [user, navigate]);
 
   const updateAllBalances = async () => {
-    if (isUpdating) return;
+    if (isUpdating || !user?.wallets) return;
     
     setIsUpdating(true);
     try {
       const updatedWallets = await Promise.all(
-        wallets.map(async (wallet) => ({
+        user.wallets.map(async (wallet) => ({
           ...wallet,
           balance: await updateWalletBalance(wallet),
           lastUpdated: new Date(),
@@ -37,7 +41,6 @@ const WalletDashboard = () => {
       );
       
       setWallets(updatedWallets);
-      localStorage.setItem('wallets', JSON.stringify(updatedWallets));
       toast.success("All balances updated successfully!");
     } catch (error) {
       console.error('Error updating balances:', error);
@@ -63,7 +66,6 @@ const WalletDashboard = () => {
         });
         
         setWallets(updatedWallets);
-        localStorage.setItem('wallets', JSON.stringify(updatedWallets));
         
         // Update the transaction history
         const newTransaction = {
@@ -78,7 +80,11 @@ const WalletDashboard = () => {
         };
         
         const updatedTransactions = [newTransaction, ...(user?.transactions || [])];
-        localStorage.setItem('transactions', JSON.stringify(updatedTransactions));
+        // Update local state and storage
+        if (user) {
+          user.transactions = updatedTransactions;
+          user.wallets = updatedWallets;
+        }
       }
     } catch (error) {
       console.error('Transaction error:', error);
@@ -95,6 +101,10 @@ const WalletDashboard = () => {
       toast.error('Failed to logout');
     }
   };
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary p-6 space-y-8">
@@ -142,7 +152,7 @@ const WalletDashboard = () => {
             <CardDescription>Your recent transactions across all networks</CardDescription>
           </CardHeader>
           <CardContent>
-            <TransactionHistory transactions={user?.transactions || []} />
+            <TransactionHistory transactions={user.transactions || []} />
           </CardContent>
         </Card>
       </div>
