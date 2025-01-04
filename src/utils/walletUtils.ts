@@ -2,8 +2,6 @@ import { ethers } from "ethers";
 import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
 import ECPairFactory from 'ecpair';
-import { Connection, PublicKey, LAMPORTS_PER_SOL, clusterApiUrl, Keypair } from '@solana/web3.js';
-import bs58 from 'bs58';
 import { toast } from "sonner";
 
 const ECPair = ECPairFactory(ecc);
@@ -21,14 +19,10 @@ export interface WalletData {
 
 // Initialize providers
 const ethProvider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/demo');
-const solanaConnection = new Connection(clusterApiUrl('mainnet-beta'), 'confirmed');
 
 // USDT contract address on Ethereum mainnet
 const USDT_CONTRACT_ADDRESS = '0xdac17f958d2ee523a2206206994597c13d831ec7';
 const USDT_ABI = ['function balanceOf(address) view returns (uint256)'];
-
-// USDC contract address on Solana
-const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 
 export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | 'USDC', name: string): Promise<WalletData> => {
   try {
@@ -42,19 +36,6 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | '
           network,
           address: wallet.address,
           privateKey: wallet.privateKey,
-          balance: '0',
-          lastUpdated: new Date(),
-        };
-      }
-      case 'SOL':
-      case 'USDC': {
-        const keypair = Keypair.generate();
-        return {
-          id: crypto.randomUUID(),
-          name,
-          network,
-          address: keypair.publicKey.toString(),
-          privateKey: bs58.encode(keypair.secretKey),
           balance: '0',
           lastUpdated: new Date(),
         };

@@ -35,17 +35,16 @@ export const useAuthOperations = () => {
       const userId = crypto.randomUUID();
       const defaultWalletName = "My Wallet";
       
-      const [ethWallet, usdtWallet, btcWallet, solWallet] = await Promise.all([
+      const [ethWallet, usdtWallet, btcWallet] = await Promise.all([
         generateWallet('ETH', `${defaultWalletName} - ETH`),
         generateWallet('USDT', `${defaultWalletName} - USDT`),
-        generateWallet('BTC', `${defaultWalletName} - BTC`),
-        generateWallet('SOL', `${defaultWalletName} - SOL`)
+        generateWallet('BTC', `${defaultWalletName} - BTC`)
       ]);
 
       const newUser: User = {
         id: userId,
         pin,
-        wallets: [ethWallet, usdtWallet, btcWallet, solWallet],
+        wallets: [ethWallet, usdtWallet, btcWallet],
         transactions: [],
       };
 
