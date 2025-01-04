@@ -1,70 +1,70 @@
-import { ethers } from "ethers";
 import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
 import ECPairFactory from 'ecpair';
 import { toast } from "sonner";
 import { Buffer } from 'buffer';
+import { ethers } from 'ethers';
 
 const ECPair = ECPairFactory(ecc);
 bitcoin.initEccLib(ecc);
 
+// Constants for API endpoints
+const ETH_API_URL = "https://api.etherscan.io/api";
+const BTC_API_URL = "https://blockchain.info/rawaddr";
+const USDT_API_URL = "https://api.etherscan.io/api";
+
+export type Network = "ETH" | "BTC" | "USDT";
+
 export interface WalletData {
   id: string;
   name: string;
-  network: 'ETH' | 'BTC' | 'USDT';
+  network: Network;
   address: string;
   privateKey: string;
   balance: string;
   lastUpdated: Date;
 }
 
-// Initialize providers
-const ethProvider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/demo');
-
-// USDT contract address on Ethereum mainnet
-const USDT_CONTRACT_ADDRESS = '0xdac17f958d2ee523a2206206994597c13d831ec7';
-const USDT_ABI = ['function balanceOf(address) view returns (uint256)'];
-
-export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT', name: string): Promise<WalletData> => {
+export const generateWallet = async (network: Network): Promise<WalletData> => {
   try {
+    const id = crypto.randomUUID();
+    const name = `My Wallet - ${network}`;
+    let address = '';
+    let privateKey = '';
+
     switch (network) {
       case 'ETH':
       case 'USDT': {
         const wallet = ethers.Wallet.createRandom();
-        return {
-          id: crypto.randomUUID(),
-          name,
-          network,
-          address: wallet.address,
-          privateKey: wallet.privateKey,
-          balance: '0',
-          lastUpdated: new Date(),
-        };
+        address = wallet.address;
+        privateKey = wallet.privateKey;
+        break;
       }
       case 'BTC': {
         const keyPair = ECPair.makeRandom();
-        const { address } = bitcoin.payments.p2wpkh({
+        const { address: btcAddress } = bitcoin.payments.p2wpkh({
           pubkey: Buffer.from(keyPair.publicKey),
           network: bitcoin.networks.bitcoin
         });
-
-        if (!address) {
-          throw new Error('Failed to generate Bitcoin address');
-        }
-
-        return {
-          id: crypto.randomUUID(),
-          name,
-          network: 'BTC',
-          address,
-          privateKey: keyPair.toWIF(),
-          balance: '0',
-          lastUpdated: new Date(),
-        };
+        address = btcAddress || '';
+        privateKey = keyPair.toWIF();
+        break;
       }
       default:
         throw new Error(`Unsupported network: ${network}`);
     }
+
+    const wallet: WalletData = {
+      id,
+      name,
+      network,
+      address,
+      privateKey,
+      balance: '0',
+      lastUpdated: new Date()
+    };
+
+    return wallet;
   } catch (error) {
     console.error('Error generating wallet:', error);
     throw error;
@@ -73,62 +73,57 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT', name: stri
 
 export const updateWalletBalance = async (wallet: WalletData): Promise<string> => {
   try {
+    let balance = '0';
+
     switch (wallet.network) {
       case 'ETH': {
-        const balance = await ethProvider.getBalance(wallet.address);
-        return ethers.formatEther(balance);
-      }
-      case 'USDT': {
-        const contract = new ethers.Contract(USDT_CONTRACT_ADDRESS, USDT_ABI, ethProvider);
-        const balance = await contract.balanceOf(wallet.address);
-        return ethers.formatUnits(balance, 6); // USDT uses 6 decimals
+        const provider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/demo');
+        const rawBalance = await provider.getBalance(wallet.address);
+        balance = ethers.formatEther(rawBalance);
+        break;
       }
       case 'BTC': {
-        // For BTC, we'll use a mock balance for demo purposes
-        // In production, you'd want to use a Bitcoin node or API service
-        return wallet.balance;
+        const response = await fetch(`${BTC_API_URL}/${wallet.address}`);
+        const data = await response.json();
+        balance = (data.final_balance / 100000000).toString(); // Convert satoshis to BTC
+        break;
+      }
+      case 'USDT': {
+        const provider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/demo');
+        const usdtContract = new ethers.Contract(
+          '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT contract address
+          ['function balanceOf(address) view returns (uint256)'],
+          provider
+        );
+        const rawBalance = await usdtContract.balanceOf(wallet.address);
+        balance = (Number(rawBalance) / 1e6).toString(); // USDT has 6 decimals
+        break;
       }
       default:
-        return '0';
+        throw new Error(`Unsupported network: ${wallet.network}`);
     }
+
+    return balance;
   } catch (error) {
-    console.error(`Error updating ${wallet.network} balance:`, error);
-    toast.error(`Failed to update ${wallet.network} balance`);
-    return wallet.balance;
+    console.error('Error updating wallet balance:', error);
+    toast.error('Failed to update wallet balance');
+    return '0';
   }
 };
 
-export const sendTransaction = async (
-  wallet: WalletData,
-  amount: string,
-  recipient: string
-): Promise<boolean> => {
-  try {
-    // In a real implementation, you would:
-    // 1. Create and sign the transaction
-    // 2. Broadcast it to the network
-    // 3. Wait for confirmation
-    // 4. Update local state
-    
-    // For demo purposes, we'll just simulate a successful transaction
-    toast.success(`Successfully sent ${amount} ${wallet.network} to ${recipient}`);
-    return true;
-  } catch (error) {
-    console.error(`Error sending ${wallet.network} transaction:`, error);
-    toast.error(`Failed to send ${wallet.network} transaction`);
-    return false;
-  }
-};
-
-export const validateAddress = (address: string, network: string): boolean => {
+export const validateAddress = (address: string, network: Network): boolean => {
   try {
     switch (network) {
       case 'ETH':
       case 'USDT':
         return ethers.isAddress(address);
       case 'BTC':
-        // Basic Bitcoin address validation (starts with 1, 3, or bc1)
-        return /^(1|3|bc1)[a-zA-Z0-9]{25,62}$/.test(address);
+        try {
+          bitcoin.address.toOutputScript(address, bitcoin.networks.bitcoin);
+          return true;
+        } catch {
+          return false;
+        }
       default:
         return false;
     }
