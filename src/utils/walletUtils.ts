@@ -49,6 +49,7 @@ export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | '
       case 'SOL':
       case 'USDC': {
         const keypair = Keypair.generate();
+        // Convert Uint8Array to Buffer properly
         const privateKeyBase58 = bs58.encode(Buffer.from(keypair.secretKey));
         return {
           id: crypto.randomUUID(),

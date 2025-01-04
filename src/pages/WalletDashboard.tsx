@@ -67,22 +67,20 @@ const WalletDashboard = () => {
         
         setWallets(updatedWallets);
         
-        // Update the transaction history
+        // Update the transaction history with correct type
         const newTransaction = {
           id: crypto.randomUUID(),
-          type: 'send',
+          type: 'send' as const, // Explicitly type as 'send'
           amount,
           currency: wallet.network,
           address: recipient,
           timestamp: new Date(),
-          status: 'completed',
+          status: 'completed' as const,
           network: wallet.network
         };
         
-        const updatedTransactions = [newTransaction, ...(user?.transactions || [])];
-        // Update local state and storage
         if (user) {
-          user.transactions = updatedTransactions;
+          user.transactions = [newTransaction, ...(user.transactions || [])];
           user.wallets = updatedWallets;
         }
       }
