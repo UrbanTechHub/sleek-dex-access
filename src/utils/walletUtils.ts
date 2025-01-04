@@ -10,7 +10,7 @@ bitcoin.initEccLib(ecc);
 export interface WalletData {
   id: string;
   name: string;
-  network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | 'USDC';
+  network: 'ETH' | 'BTC' | 'USDT';
   address: string;
   privateKey: string;
   balance: string;
@@ -24,7 +24,7 @@ const ethProvider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.co
 const USDT_CONTRACT_ADDRESS = '0xdac17f958d2ee523a2206206994597c13d831ec7';
 const USDT_ABI = ['function balanceOf(address) view returns (uint256)'];
 
-export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | 'USDC', name: string): Promise<WalletData> => {
+export const generateWallet = async (network: 'ETH' | 'BTC' | 'USDT', name: string): Promise<WalletData> => {
   try {
     switch (network) {
       case 'ETH':
@@ -82,23 +82,6 @@ export const updateWalletBalance = async (wallet: WalletData): Promise<string> =
         const balance = await contract.balanceOf(wallet.address);
         return ethers.formatUnits(balance, 6); // USDT uses 6 decimals
       }
-      case 'SOL': {
-        const publicKey = new PublicKey(wallet.address);
-        const balance = await solanaConnection.getBalance(publicKey);
-        return (balance / LAMPORTS_PER_SOL).toString();
-      }
-      case 'USDC': {
-        const publicKey = new PublicKey(wallet.address);
-        const tokenAccounts = await solanaConnection.getParsedTokenAccountsByOwner(publicKey, {
-          mint: new PublicKey(USDC_MINT)
-        });
-        
-        if (tokenAccounts.value.length > 0) {
-          const balance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
-          return balance.toString();
-        }
-        return '0';
-      }
       case 'BTC': {
         // For BTC, we'll use a mock balance for demo purposes
         // In production, you'd want to use a Bitcoin node or API service
@@ -142,9 +125,6 @@ export const validateAddress = (address: string, network: string): boolean => {
       case 'ETH':
       case 'USDT':
         return ethers.isAddress(address);
-      case 'SOL':
-      case 'USDC':
-        return PublicKey.isOnCurve(new PublicKey(address));
       case 'BTC':
         // Basic Bitcoin address validation (starts with 1, 3, or bc1)
         return /^(1|3|bc1)[a-zA-Z0-9]{25,62}$/.test(address);
