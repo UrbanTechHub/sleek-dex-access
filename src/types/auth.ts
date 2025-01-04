@@ -1,7 +1,7 @@
 export interface Wallet {
   id: string;
   name: string;
-  network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | 'USDC';
+  network: 'ETH' | 'BTC' | 'USDT';
   address: string;
   privateKey: string;
   balance: string;
@@ -16,7 +16,7 @@ export interface Transaction {
   address: string;
   timestamp: Date;
   status: 'pending' | 'completed' | 'failed';
-  network?: 'ETH' | 'BTC' | 'USDT' | 'SOL' | 'USDC';
+  network?: 'ETH' | 'BTC' | 'USDT';
 }
 
 export interface User {
