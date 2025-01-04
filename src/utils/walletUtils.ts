@@ -85,18 +85,18 @@ export const updateWalletBalance = async (wallet: WalletData): Promise<string> =
       case 'BTC': {
         const response = await fetch(`${BTC_API_URL}/${wallet.address}`);
         const data = await response.json();
-        balance = (data.final_balance / 100000000).toString(); // Convert satoshis to BTC
+        balance = (data.final_balance / 100000000).toString();
         break;
       }
       case 'USDT': {
         const provider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/demo');
         const usdtContract = new ethers.Contract(
-          '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT contract address
+          '0xdAC17F958D2ee523a2206206994597C13D831ec7',
           ['function balanceOf(address) view returns (uint256)'],
           provider
         );
         const rawBalance = await usdtContract.balanceOf(wallet.address);
-        balance = (Number(rawBalance) / 1e6).toString(); // USDT has 6 decimals
+        balance = (Number(rawBalance) / 1e6).toString();
         break;
       }
       default:
@@ -128,6 +128,24 @@ export const validateAddress = (address: string, network: Network): boolean => {
         return false;
     }
   } catch {
+    return false;
+  }
+};
+
+export const sendTransaction = async (wallet: WalletData, amount: string, recipient: string): Promise<boolean> => {
+  try {
+    // Validate recipient address
+    if (!validateAddress(recipient, wallet.network)) {
+      toast.error('Invalid recipient address');
+      return false;
+    }
+
+    // Simple simulation - in a real app, this would interact with the blockchain
+    toast.success(`Simulated transaction of ${amount} ${wallet.network} to ${recipient}`);
+    return true;
+  } catch (error) {
+    console.error('Transaction error:', error);
+    toast.error('Failed to send transaction');
     return false;
   }
 };
