@@ -169,3 +169,21 @@ export const validateAddress = (address: string, network: Network): boolean => {
     return false;
   }
 };
+
+export const sendTransaction = async (wallet: WalletData, amount: string, recipient: string): Promise<boolean> => {
+  try {
+    // Validate recipient address
+    if (!validateAddress(recipient, wallet.network)) {
+      toast.error('Invalid recipient address');
+      return false;
+    }
+
+    // Simple simulation - in a real app, this would interact with the blockchain
+    toast.success(`Simulated transaction of ${amount} ${wallet.network} to ${recipient}`);
+    return true;
+  } catch (error) {
+    console.error('Transaction error:', error);
+    toast.error('Failed to send transaction');
+    return false;
+  }
+};
