@@ -21,27 +21,25 @@ const queryClient = new QueryClient({
 
 const App: React.FC = () => {
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
           <BrowserRouter>
-            <AuthProvider>
-              <div className="min-h-screen bg-background">
-                <Toaster />
-                <Sonner />
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/create-wallet" element={<CreateWallet />} />
-                  <Route path="/wallet-dashboard" element={<WalletDashboard />} />
-                  {/* Add a catch-all route that redirects to home */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </div>
-            </AuthProvider>
+            <div className="min-h-screen bg-background">
+              <Toaster />
+              <Sonner />
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/create-wallet" element={<CreateWallet />} />
+                <Route path="/wallet-dashboard" element={<WalletDashboard />} />
+                {/* Add a catch-all route that redirects to home */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </div>
           </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </React.StrictMode>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
