@@ -3,9 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Wallet, Key, ArrowRight } from "lucide-react";
 import PasskeyAuth from "@/components/PasskeyAuth";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [mode, setMode] = useState<'login' | 'create'>('login');
+  const navigate = useNavigate();
+
+  const handleAuthSuccess = () => {
+    navigate('/wallet-dashboard');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 md:p-8 animate-fade-in">
@@ -44,7 +50,7 @@ const Index = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <PasskeyAuth mode={mode} />
+                <PasskeyAuth mode={mode} onSuccess={handleAuthSuccess} />
                 <Button 
                   variant="ghost" 
                   className="w-full group hover:bg-purple-50 dark:hover:bg-gray-800 transition-all duration-300"
