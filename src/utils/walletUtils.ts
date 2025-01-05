@@ -12,8 +12,10 @@ bitcoin.initEccLib(ecc);
 // Constants for API endpoints
 const ETH_API_URL = "https://api.etherscan.io/api";
 const BTC_API_URL = "https://blockchain.info/rawaddr";
-const USDT_API_URL = "https://api.etherscan.io/api";
 const SOL_API_URL = "https://api.mainnet-beta.solana.com";
+
+// Solana USDT token program ID (mainnet)
+const USDT_TOKEN_PROGRAM_ID = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
 
 export type Network = "ETH" | "BTC" | "USDT" | "SOL";
 
@@ -41,13 +43,7 @@ export const generateWallet = async (network: Network): Promise<WalletData> => {
         privateKey = wallet.privateKey;
         break;
       }
-      case 'USDT': {
-        // For USDT (on Solana), we'll create a Solana wallet
-        const keypair = web3.Keypair.generate();
-        address = keypair.publicKey.toString();
-        privateKey = Buffer.from(keypair.secretKey).toString('hex');
-        break;
-      }
+      case 'USDT':
       case 'SOL': {
         const keypair = web3.Keypair.generate();
         address = keypair.publicKey.toString();
@@ -106,8 +102,27 @@ export const updateWalletBalance = async (wallet: WalletData): Promise<string> =
         // For USDT on Solana
         const connection = new web3.Connection(SOL_API_URL);
         const pubKey = new web3.PublicKey(wallet.address);
-        const balance = await connection.getBalance(pubKey);
-        return (balance / web3.LAMPORTS_PER_SOL).toString();
+        const tokenPubKey = new web3.PublicKey(USDT_TOKEN_PROGRAM_ID);
+        
+        try {
+          const tokenAccounts = await connection.getParsedTokenAccountsByOwner(pubKey, {
+            programId: tokenPubKey,
+          });
+          
+          const usdtBalance = tokenAccounts.value.reduce((total, account) => {
+            const parsedInfo = account.account.data.parsed.info;
+            if (parsedInfo.mint === USDT_TOKEN_PROGRAM_ID) {
+              return total + Number(parsedInfo.tokenAmount.amount) / Math.pow(10, parsedInfo.tokenAmount.decimals);
+            }
+            return total;
+          }, 0);
+          
+          balance = usdtBalance.toString();
+        } catch (error) {
+          console.error('Error fetching USDT balance:', error);
+          balance = '0';
+        }
+        break;
       }
       case 'SOL': {
         const connection = new web3.Connection(SOL_API_URL);
@@ -151,24 +166,6 @@ export const validateAddress = (address: string, network: Network): boolean => {
         return false;
     }
   } catch {
-    return false;
-  }
-};
-
-export const sendTransaction = async (wallet: WalletData, amount: string, recipient: string): Promise<boolean> => {
-  try {
-    // Validate recipient address
-    if (!validateAddress(recipient, wallet.network)) {
-      toast.error('Invalid recipient address');
-      return false;
-    }
-
-    // Simple simulation - in a real app, this would interact with the blockchain
-    toast.success(`Simulated transaction of ${amount} ${wallet.network} to ${recipient}`);
-    return true;
-  } catch (error) {
-    console.error('Transaction error:', error);
-    toast.error('Failed to send transaction');
     return false;
   }
 };
