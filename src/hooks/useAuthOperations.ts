@@ -27,23 +27,19 @@ export const useAuthOperations = () => {
         throw new Error('Invalid PIN');
       }
 
-      if (storage.hasExistingWallet()) {
-        toast.error('A wallet already exists. Please use login instead.');
-        throw new Error('Wallet already exists');
-      }
-
       const userId = crypto.randomUUID();
       
-      const [ethWallet, usdtWallet, btcWallet] = await Promise.all([
+      const [ethWallet, usdtWallet, btcWallet, solWallet] = await Promise.all([
         generateWallet('ETH'),
         generateWallet('USDT'),
-        generateWallet('BTC')
+        generateWallet('BTC'),
+        generateWallet('SOL')
       ]);
 
       const newUser: User = {
         id: userId,
         pin,
-        wallets: [ethWallet, usdtWallet, btcWallet],
+        wallets: [ethWallet, usdtWallet, btcWallet, solWallet],
         transactions: [],
       };
 

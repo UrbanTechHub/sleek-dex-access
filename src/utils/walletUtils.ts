@@ -4,6 +4,7 @@ import ECPairFactory from 'ecpair';
 import { toast } from "sonner";
 import { Buffer } from 'buffer';
 import { ethers } from 'ethers';
+import * as web3 from '@solana/web3.js';
 
 const ECPair = ECPairFactory(ecc);
 bitcoin.initEccLib(ecc);
@@ -12,8 +13,9 @@ bitcoin.initEccLib(ecc);
 const ETH_API_URL = "https://api.etherscan.io/api";
 const BTC_API_URL = "https://blockchain.info/rawaddr";
 const USDT_API_URL = "https://api.etherscan.io/api";
+const SOL_API_URL = "https://api.mainnet-beta.solana.com";
 
-export type Network = "ETH" | "BTC" | "USDT";
+export type Network = "ETH" | "BTC" | "USDT" | "SOL";
 
 export interface WalletData {
   id: string;
@@ -33,11 +35,23 @@ export const generateWallet = async (network: Network): Promise<WalletData> => {
     let privateKey = '';
 
     switch (network) {
-      case 'ETH':
-      case 'USDT': {
+      case 'ETH': {
         const wallet = ethers.Wallet.createRandom();
         address = wallet.address;
         privateKey = wallet.privateKey;
+        break;
+      }
+      case 'USDT': {
+        // For USDT (on Solana), we'll create a Solana wallet
+        const keypair = web3.Keypair.generate();
+        address = keypair.publicKey.toString();
+        privateKey = Buffer.from(keypair.secretKey).toString('hex');
+        break;
+      }
+      case 'SOL': {
+        const keypair = web3.Keypair.generate();
+        address = keypair.publicKey.toString();
+        privateKey = Buffer.from(keypair.secretKey).toString('hex');
         break;
       }
       case 'BTC': {
@@ -89,15 +103,17 @@ export const updateWalletBalance = async (wallet: WalletData): Promise<string> =
         break;
       }
       case 'USDT': {
-        const provider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/demo');
-        const usdtContract = new ethers.Contract(
-          '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-          ['function balanceOf(address) view returns (uint256)'],
-          provider
-        );
-        const rawBalance = await usdtContract.balanceOf(wallet.address);
-        balance = (Number(rawBalance) / 1e6).toString();
-        break;
+        // For USDT on Solana
+        const connection = new web3.Connection(SOL_API_URL);
+        const pubKey = new web3.PublicKey(wallet.address);
+        const balance = await connection.getBalance(pubKey);
+        return (balance / web3.LAMPORTS_PER_SOL).toString();
+      }
+      case 'SOL': {
+        const connection = new web3.Connection(SOL_API_URL);
+        const pubKey = new web3.PublicKey(wallet.address);
+        const balance = await connection.getBalance(pubKey);
+        return (balance / web3.LAMPORTS_PER_SOL).toString();
       }
       default:
         throw new Error(`Unsupported network: ${wallet.network}`);
@@ -115,8 +131,15 @@ export const validateAddress = (address: string, network: Network): boolean => {
   try {
     switch (network) {
       case 'ETH':
-      case 'USDT':
         return ethers.isAddress(address);
+      case 'USDT':
+      case 'SOL':
+        try {
+          new web3.PublicKey(address);
+          return true;
+        } catch {
+          return false;
+        }
       case 'BTC':
         try {
           bitcoin.address.toOutputScript(address, bitcoin.networks.bitcoin);
