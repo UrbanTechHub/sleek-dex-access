@@ -9,25 +9,34 @@ bitcoin.initEccLib(ecc);
 const BTC_API_URL = "https://mempool.space/api/address";
 
 export const generateBitcoinWallet = () => {
-  const keyPair = ECPair.makeRandom();
-  const { address } = bitcoin.payments.p2wpkh({
-    pubkey: Buffer.from(keyPair.publicKey),
-    network: bitcoin.networks.bitcoin
-  });
-  return {
-    address: address || '',
-    privateKey: keyPair.toWIF(),
-  };
+  try {
+    const keyPair = ECPair.makeRandom();
+    const { address } = bitcoin.payments.p2wpkh({
+      pubkey: Buffer.from(keyPair.publicKey),
+      network: bitcoin.networks.bitcoin
+    });
+    console.log('Generated BTC wallet:', address);
+    return {
+      address: address || '',
+      privateKey: keyPair.toWIF(),
+    };
+  } catch (error) {
+    console.error('Error generating BTC wallet:', error);
+    toast.error('Failed to generate BTC wallet');
+    throw error;
+  }
 };
 
 export const getBitcoinBalance = async (address: string): Promise<string> => {
   try {
+    console.log('Fetching BTC balance for:', address);
     const response = await fetch(`${BTC_API_URL}/${address}`);
     if (!response.ok) {
       throw new Error('Failed to fetch BTC balance');
     }
     const data = await response.json();
     const balance = ((data.chain_stats?.funded_txo_sum || 0) - (data.chain_stats?.spent_txo_sum || 0) / 100000000).toString();
+    console.log('BTC balance:', balance);
     return balance;
   } catch (error) {
     console.error('Error fetching BTC balance:', error);
@@ -40,7 +49,8 @@ export const validateBitcoinAddress = (address: string): boolean => {
   try {
     bitcoin.address.toOutputScript(address, bitcoin.networks.bitcoin);
     return true;
-  } catch {
+  } catch (error) {
+    console.error('Error validating BTC address:', error);
     return false;
   }
 };
@@ -52,8 +62,11 @@ export const sendBitcoinTransaction = async (
   privateKey: string
 ): Promise<boolean> => {
   try {
-    // For now, we'll simulate the transaction
-    console.log('Simulated BTC transaction:', { fromAddress, toAddress, amount });
+    console.log('Simulating BTC transaction:', { fromAddress, toAddress, amount });
+    if (!validateBitcoinAddress(toAddress)) {
+      toast.error('Invalid BTC address');
+      return false;
+    }
     toast.success(`Simulated sending ${amount} BTC`);
     return true;
   } catch (error) {
