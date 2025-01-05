@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { generateEthereumWallet, getEthereumBalance, validateEthereumAddress, sendEthereumTransaction } from './networks/ethereumUtils';
 import { generateBitcoinWallet, getBitcoinBalance, validateBitcoinAddress, sendBitcoinTransaction } from './networks/bitcoinUtils';
 import { generateSolanaWallet, getSolanaBalance, validateSolanaAddress, sendSolanaTransaction } from './networks/solanaUtils';
