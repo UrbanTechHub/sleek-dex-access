@@ -9,10 +9,10 @@ import * as web3 from '@solana/web3.js';
 const ECPair = ECPairFactory(ecc);
 bitcoin.initEccLib(ecc);
 
-// Constants for API endpoints
-const ETH_API_URL = "https://api.etherscan.io/api";
+// Constants for API endpoints and tokens
+const ETH_RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
 const BTC_API_URL = "https://blockchain.info/rawaddr";
-const SOL_API_URL = "https://api.mainnet-beta.solana.com";
+const SOL_RPC_URL = "https://api.mainnet-beta.solana.com";
 
 // Solana USDT token program ID (mainnet)
 const USDT_TOKEN_PROGRAM_ID = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
@@ -43,7 +43,13 @@ export const generateWallet = async (network: Network): Promise<WalletData> => {
         privateKey = wallet.privateKey;
         break;
       }
-      case 'USDT':
+      case 'USDT': {
+        // For USDT, we'll create a Solana wallet since we're using Solana's USDT
+        const keypair = web3.Keypair.generate();
+        address = keypair.publicKey.toString();
+        privateKey = Buffer.from(keypair.secretKey).toString('hex');
+        break;
+      }
       case 'SOL': {
         const keypair = web3.Keypair.generate();
         address = keypair.publicKey.toString();
@@ -60,11 +66,9 @@ export const generateWallet = async (network: Network): Promise<WalletData> => {
         privateKey = keyPair.toWIF();
         break;
       }
-      default:
-        throw new Error(`Unsupported network: ${network}`);
     }
 
-    const wallet: WalletData = {
+    return {
       id,
       name,
       network,
@@ -73,8 +77,6 @@ export const generateWallet = async (network: Network): Promise<WalletData> => {
       balance: '0',
       lastUpdated: new Date()
     };
-
-    return wallet;
   } catch (error) {
     console.error('Error generating wallet:', error);
     throw error;
@@ -84,60 +86,49 @@ export const generateWallet = async (network: Network): Promise<WalletData> => {
 export const updateWalletBalance = async (wallet: WalletData): Promise<string> => {
   try {
     let balance = '0';
-
+    
     switch (wallet.network) {
       case 'ETH': {
-        const provider = new ethers.JsonRpcProvider('https://eth-mainnet.g.alchemy.com/v2/demo');
+        const provider = new ethers.JsonRpcProvider(ETH_RPC_URL);
         const rawBalance = await provider.getBalance(wallet.address);
         balance = ethers.formatEther(rawBalance);
         break;
       }
       case 'BTC': {
         const response = await fetch(`${BTC_API_URL}/${wallet.address}`);
+        if (!response.ok) throw new Error('Failed to fetch BTC balance');
         const data = await response.json();
         balance = (data.final_balance / 100000000).toString();
         break;
       }
       case 'USDT': {
-        // For USDT on Solana
-        const connection = new web3.Connection(SOL_API_URL);
+        const connection = new web3.Connection(SOL_RPC_URL, 'confirmed');
         const pubKey = new web3.PublicKey(wallet.address);
-        const tokenPubKey = new web3.PublicKey(USDT_TOKEN_PROGRAM_ID);
+        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+          pubKey,
+          { programId: new web3.PublicKey(USDT_TOKEN_PROGRAM_ID) }
+        );
         
-        try {
-          const tokenAccounts = await connection.getParsedTokenAccountsByOwner(pubKey, {
-            programId: tokenPubKey,
-          });
-          
-          const usdtBalance = tokenAccounts.value.reduce((total, account) => {
-            const parsedInfo = account.account.data.parsed.info;
-            if (parsedInfo.mint === USDT_TOKEN_PROGRAM_ID) {
-              return total + Number(parsedInfo.tokenAmount.amount) / Math.pow(10, parsedInfo.tokenAmount.decimals);
-            }
-            return total;
-          }, 0);
-          
-          balance = usdtBalance.toString();
-        } catch (error) {
-          console.error('Error fetching USDT balance:', error);
-          balance = '0';
-        }
+        const usdtBalance = tokenAccounts.value.reduce((total, account) => {
+          const parsedInfo = account.account.data.parsed.info;
+          return total + Number(parsedInfo.tokenAmount.amount) / Math.pow(10, parsedInfo.tokenAmount.decimals);
+        }, 0);
+        
+        balance = usdtBalance.toString();
         break;
       }
       case 'SOL': {
-        const connection = new web3.Connection(SOL_API_URL);
+        const connection = new web3.Connection(SOL_RPC_URL, 'confirmed');
         const pubKey = new web3.PublicKey(wallet.address);
-        const balance = await connection.getBalance(pubKey);
-        return (balance / web3.LAMPORTS_PER_SOL).toString();
+        const rawBalance = await connection.getBalance(pubKey);
+        balance = (rawBalance / web3.LAMPORTS_PER_SOL).toString();
+        break;
       }
-      default:
-        throw new Error(`Unsupported network: ${wallet.network}`);
     }
 
     return balance;
   } catch (error) {
     console.error('Error updating wallet balance:', error);
-    toast.error('Failed to update wallet balance');
     return '0';
   }
 };
@@ -172,14 +163,25 @@ export const validateAddress = (address: string, network: Network): boolean => {
 
 export const sendTransaction = async (wallet: WalletData, amount: string, recipient: string): Promise<boolean> => {
   try {
-    // Validate recipient address
     if (!validateAddress(recipient, wallet.network)) {
       toast.error('Invalid recipient address');
       return false;
     }
 
-    // Simple simulation - in a real app, this would interact with the blockchain
-    toast.success(`Simulated transaction of ${amount} ${wallet.network} to ${recipient}`);
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      toast.error('Invalid amount');
+      return false;
+    }
+
+    if (parseFloat(wallet.balance) < numAmount) {
+      toast.error('Insufficient balance');
+      return false;
+    }
+
+    // In a real implementation, this would interact with the blockchain
+    // For now, we'll simulate a successful transaction
+    toast.success(`Transaction of ${amount} ${wallet.network} to ${recipient} simulated successfully`);
     return true;
   } catch (error) {
     console.error('Transaction error:', error);

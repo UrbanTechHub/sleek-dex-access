@@ -21,10 +21,17 @@ const WalletDashboard = () => {
       navigate('/');
       return;
     }
-
-    console.log('Setting wallets from user:', user.wallets);
     setWallets(user.wallets || []);
+    
+    // Initial balance update
     void updateAllBalances();
+    
+    // Set up automatic balance updates every 30 seconds
+    const intervalId = setInterval(() => {
+      void updateAllBalances();
+    }, 30000);
+
+    return () => clearInterval(intervalId);
   }, [user, navigate]);
 
   const updateAllBalances = async () => {
@@ -41,6 +48,12 @@ const WalletDashboard = () => {
       );
       
       setWallets(updatedWallets);
+      
+      // Update user context with new balances
+      if (user) {
+        user.wallets = updatedWallets;
+      }
+      
       toast.success("All balances updated successfully!");
     } catch (error) {
       console.error('Error updating balances:', error);
@@ -67,10 +80,10 @@ const WalletDashboard = () => {
         
         setWallets(updatedWallets);
         
-        // Update the transaction history with correct type
+        // Update the transaction history
         const newTransaction = {
           id: crypto.randomUUID(),
-          type: 'send' as const, // Explicitly type as 'send'
+          type: 'send' as const,
           amount,
           currency: wallet.network,
           address: recipient,
@@ -83,6 +96,9 @@ const WalletDashboard = () => {
           user.transactions = [newTransaction, ...(user.transactions || [])];
           user.wallets = updatedWallets;
         }
+        
+        // Trigger a balance update after the transaction
+        void updateAllBalances();
       }
     } catch (error) {
       console.error('Transaction error:', error);
