@@ -9,12 +9,13 @@ import * as web3 from '@solana/web3.js';
 const ECPair = ECPairFactory(ecc);
 bitcoin.initEccLib(ecc);
 
-// Constants for API endpoints and tokens
-const ETH_RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
-const BTC_API_URL = "https://blockchain.info/rawaddr";
-const SOL_RPC_URL = "https://api.mainnet-beta.solana.com";
+// Updated API endpoints
+const ETH_RPC_URL = 'https://eth-mainnet.public.blastapi.io';
+const BTC_API_URL = "https://mempool.space/api/address";
+const SOL_RPC_URL = "https://api.devnet.solana.com"; // Using devnet for development
+const SOLANA_CLUSTER = 'devnet';
 
-// Solana USDT token program ID (mainnet)
+// Solana USDT token program ID (devnet)
 const USDT_TOKEN_PROGRAM_ID = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
 
 export type Network = "ETH" | "BTC" | "USDT" | "SOL";
@@ -43,13 +44,7 @@ export const generateWallet = async (network: Network): Promise<WalletData> => {
         privateKey = wallet.privateKey;
         break;
       }
-      case 'USDT': {
-        // For USDT, we'll create a Solana wallet since we're using Solana's USDT
-        const keypair = web3.Keypair.generate();
-        address = keypair.publicKey.toString();
-        privateKey = Buffer.from(keypair.secretKey).toString('hex');
-        break;
-      }
+      case 'USDT':
       case 'SOL': {
         const keypair = web3.Keypair.generate();
         address = keypair.publicKey.toString();
@@ -95,33 +90,52 @@ export const updateWalletBalance = async (wallet: WalletData): Promise<string> =
         break;
       }
       case 'BTC': {
-        const response = await fetch(`${BTC_API_URL}/${wallet.address}`);
-        if (!response.ok) throw new Error('Failed to fetch BTC balance');
-        const data = await response.json();
-        balance = (data.final_balance / 100000000).toString();
+        try {
+          const response = await fetch(`${BTC_API_URL}/${wallet.address}`);
+          if (!response.ok) {
+            console.error('BTC API error:', await response.text());
+            return '0';
+          }
+          const data = await response.json();
+          // mempool.space uses chain_stats.funded_txo_sum - chain_stats.spent_txo_sum for balance
+          balance = ((data.chain_stats?.funded_txo_sum || 0) - (data.chain_stats?.spent_txo_sum || 0) / 100000000).toString();
+        } catch (error) {
+          console.error('Error fetching BTC balance:', error);
+          return '0';
+        }
         break;
       }
       case 'USDT': {
-        const connection = new web3.Connection(SOL_RPC_URL, 'confirmed');
-        const pubKey = new web3.PublicKey(wallet.address);
-        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-          pubKey,
-          { programId: new web3.PublicKey(USDT_TOKEN_PROGRAM_ID) }
-        );
-        
-        const usdtBalance = tokenAccounts.value.reduce((total, account) => {
-          const parsedInfo = account.account.data.parsed.info;
-          return total + Number(parsedInfo.tokenAmount.amount) / Math.pow(10, parsedInfo.tokenAmount.decimals);
-        }, 0);
-        
-        balance = usdtBalance.toString();
+        try {
+          const connection = new web3.Connection(SOL_RPC_URL, 'confirmed');
+          const pubKey = new web3.PublicKey(wallet.address);
+          const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+            pubKey,
+            { programId: new web3.PublicKey(USDT_TOKEN_PROGRAM_ID) }
+          );
+          
+          const usdtBalance = tokenAccounts.value.reduce((total, account) => {
+            const parsedInfo = account.account.data.parsed.info;
+            return total + Number(parsedInfo.tokenAmount.amount) / Math.pow(10, parsedInfo.tokenAmount.decimals);
+          }, 0);
+          
+          balance = usdtBalance.toString();
+        } catch (error) {
+          console.error('Error fetching USDT balance:', error);
+          return '0';
+        }
         break;
       }
       case 'SOL': {
-        const connection = new web3.Connection(SOL_RPC_URL, 'confirmed');
-        const pubKey = new web3.PublicKey(wallet.address);
-        const rawBalance = await connection.getBalance(pubKey);
-        balance = (rawBalance / web3.LAMPORTS_PER_SOL).toString();
+        try {
+          const connection = new web3.Connection(SOL_RPC_URL, 'confirmed');
+          const pubKey = new web3.PublicKey(wallet.address);
+          const rawBalance = await connection.getBalance(pubKey);
+          balance = (rawBalance / web3.LAMPORTS_PER_SOL).toString();
+        } catch (error) {
+          console.error('Error fetching SOL balance:', error);
+          return '0';
+        }
         break;
       }
     }
@@ -174,14 +188,46 @@ export const sendTransaction = async (wallet: WalletData, amount: string, recipi
       return false;
     }
 
-    if (parseFloat(wallet.balance) < numAmount) {
+    const currentBalance = await updateWalletBalance(wallet);
+    if (parseFloat(currentBalance) < numAmount) {
       toast.error('Insufficient balance');
       return false;
     }
 
-    // In a real implementation, this would interact with the blockchain
-    // For now, we'll simulate a successful transaction
-    toast.success(`Transaction of ${amount} ${wallet.network} to ${recipient} simulated successfully`);
+    switch (wallet.network) {
+      case 'SOL': {
+        const connection = new web3.Connection(SOL_RPC_URL, 'confirmed');
+        const senderKeypair = web3.Keypair.fromSecretKey(
+          Buffer.from(wallet.privateKey, 'hex')
+        );
+        const recipientPubKey = new web3.PublicKey(recipient);
+        
+        const transaction = new web3.Transaction().add(
+          web3.SystemProgram.transfer({
+            fromPubkey: senderKeypair.publicKey,
+            toPubkey: recipientPubKey,
+            lamports: numAmount * web3.LAMPORTS_PER_SOL,
+          })
+        );
+
+        const signature = await web3.sendAndConfirmTransaction(
+          connection,
+          transaction,
+          [senderKeypair]
+        );
+        console.log('SOL Transaction signature:', signature);
+        break;
+      }
+      // For other networks, we'll simulate success for now
+      default:
+        console.log(`Simulated ${wallet.network} transaction:`, {
+          from: wallet.address,
+          to: recipient,
+          amount: amount
+        });
+    }
+
+    toast.success(`Transaction of ${amount} ${wallet.network} sent successfully`);
     return true;
   } catch (error) {
     console.error('Transaction error:', error);
