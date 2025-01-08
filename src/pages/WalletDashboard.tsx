@@ -73,11 +73,14 @@ const WalletDashboard = () => {
       const success = await sendTransaction(wallet, amount, recipient);
       
       if (success) {
+        // Update the specific wallet's balance immediately after successful transaction
+        const updatedBalance = await updateWalletBalance(wallet);
+        
         const updatedWallets = wallets.map(w => {
           if (w.id === wallet.id) {
             return {
               ...w,
-              balance: (Number(w.balance) - Number(amount)).toString()
+              balance: updatedBalance
             };
           }
           return w;
@@ -106,8 +109,7 @@ const WalletDashboard = () => {
           storage.setUser(updatedUser);
         }
         
-        // Trigger a balance update after the transaction
-        void updateAllBalances();
+        toast.success(`Successfully sent ${amount} ${wallet.network}`);
       }
     } catch (error) {
       console.error('Transaction error:', error);
