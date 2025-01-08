@@ -145,27 +145,19 @@ const WalletDashboard = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {wallets.map((wallet) => (
-            <Card key={wallet.id} className="backdrop-blur-sm bg-card/90">
-              <CardHeader>
-                <CardTitle>{wallet.name}</CardTitle>
-                <CardDescription>
-                  Balance: {wallet.balance} {wallet.network}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <WalletInfo
-                  address={wallet.address}
-                  network={wallet.network}
-                  balance={wallet.balance}
-                />
-                <WalletActions
-                  wallet={wallet}
-                  onSend={handleSendTransaction(wallet)}
-                  onUpdate={updateAllBalances}
-                  isUpdating={isUpdating}
-                />
-              </CardContent>
-            </Card>
+            <div key={wallet.id}>
+              <WalletInfo
+                address={wallet.address}
+                network={wallet.network}
+                balance={wallet.balance}
+              />
+              <WalletActions
+                wallet={wallet}
+                onSend={handleSendTransaction(wallet)}
+                onUpdate={updateAllBalances}
+                isUpdating={isUpdating}
+              />
+            </div>
           ))}
         </div>
 
