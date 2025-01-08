@@ -41,11 +41,43 @@ const WalletDashboard = () => {
     setIsUpdating(true);
     try {
       const updatedWallets = await Promise.all(
-        user.wallets.map(async (wallet) => ({
-          ...wallet,
-          balance: await updateWalletBalance(wallet),
-          lastUpdated: new Date(),
-        }))
+        user.wallets.map(async (wallet) => {
+          const newBalance = await updateWalletBalance(wallet);
+          
+          // If balance has increased, create a receive transaction
+          if (parseFloat(newBalance) > parseFloat(wallet.balance)) {
+            const receivedAmount = (parseFloat(newBalance) - parseFloat(wallet.balance)).toString();
+            
+            // Create new receive transaction
+            const newTransaction = {
+              id: crypto.randomUUID(),
+              type: 'receive' as const,
+              amount: receivedAmount,
+              currency: wallet.network,
+              address: wallet.address,
+              timestamp: new Date(),
+              status: 'completed' as const,
+              network: wallet.network
+            };
+            
+            // Update user with new transaction
+            if (user) {
+              const updatedUser = {
+                ...user,
+                transactions: [newTransaction, ...(user.transactions || [])],
+              };
+              storage.setUser(updatedUser);
+            }
+            
+            toast.success(`Received ${receivedAmount} ${wallet.network}`);
+          }
+          
+          return {
+            ...wallet,
+            balance: newBalance,
+            lastUpdated: new Date(),
+          };
+        })
       );
       
       setWallets(updatedWallets);
