@@ -88,7 +88,7 @@ const WalletDashboard = () => {
         
         setWallets(updatedWallets);
         
-        // Update the transaction history and persist to localStorage
+        // Create new transaction record
         const newTransaction = {
           id: crypto.randomUUID(),
           type: 'send' as const,
@@ -100,6 +100,7 @@ const WalletDashboard = () => {
           network: wallet.network
         };
         
+        // Update user with new transaction and wallet data
         if (user) {
           const updatedUser = {
             ...user,
