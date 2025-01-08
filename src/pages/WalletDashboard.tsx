@@ -9,6 +9,7 @@ import { WalletData, updateWalletBalance, sendTransaction } from "@/utils/wallet
 import WalletActions from "@/components/WalletActions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { storage } from "@/utils/localStorage";
 
 const WalletDashboard = () => {
   const [wallets, setWallets] = useState<WalletData[]>([]);
@@ -49,9 +50,13 @@ const WalletDashboard = () => {
       
       setWallets(updatedWallets);
       
-      // Update user context with new balances
+      // Update user context with new balances and persist to localStorage
       if (user) {
-        user.wallets = updatedWallets;
+        const updatedUser = {
+          ...user,
+          wallets: updatedWallets
+        };
+        storage.setUser(updatedUser);
       }
       
       toast.success("All balances updated successfully!");
@@ -80,7 +85,7 @@ const WalletDashboard = () => {
         
         setWallets(updatedWallets);
         
-        // Update the transaction history
+        // Update the transaction history and persist to localStorage
         const newTransaction = {
           id: crypto.randomUUID(),
           type: 'send' as const,
@@ -93,8 +98,12 @@ const WalletDashboard = () => {
         };
         
         if (user) {
-          user.transactions = [newTransaction, ...(user.transactions || [])];
-          user.wallets = updatedWallets;
+          const updatedUser = {
+            ...user,
+            transactions: [newTransaction, ...(user.transactions || [])],
+            wallets: updatedWallets
+          };
+          storage.setUser(updatedUser);
         }
         
         // Trigger a balance update after the transaction
