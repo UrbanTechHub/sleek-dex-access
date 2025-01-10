@@ -22,9 +22,11 @@ const WalletDashboard = () => {
       navigate('/');
       return;
     }
+    
+    console.log('Setting initial wallets:', user.wallets);
     setWallets(user.wallets || []);
     
-    // Initial balance update with error handling
+    // Initial balance update
     void updateAllBalances().catch(console.error);
     
     // Set up automatic balance updates every 30 seconds
@@ -44,35 +46,6 @@ const WalletDashboard = () => {
         user.wallets.map(async (wallet) => {
           try {
             const newBalance = await updateWalletBalance(wallet);
-            
-            // If balance has increased, create a receive transaction
-            if (parseFloat(newBalance) > parseFloat(wallet.balance)) {
-              const receivedAmount = (parseFloat(newBalance) - parseFloat(wallet.balance)).toString();
-              
-              // Create new receive transaction
-              const newTransaction = {
-                id: crypto.randomUUID(),
-                type: 'receive' as const,
-                amount: receivedAmount,
-                currency: wallet.network,
-                address: wallet.address,
-                timestamp: new Date(),
-                status: 'completed' as const,
-                network: wallet.network
-              };
-              
-              // Update user with new transaction
-              if (user) {
-                const updatedUser = {
-                  ...user,
-                  transactions: [newTransaction, ...(user.transactions || [])],
-                };
-                storage.setUser(updatedUser);
-              }
-              
-              toast.success(`Received ${receivedAmount} ${wallet.network}`);
-            }
-            
             return {
               ...wallet,
               balance: newBalance,
@@ -80,14 +53,13 @@ const WalletDashboard = () => {
             };
           } catch (error) {
             console.error(`Error updating ${wallet.network} balance:`, error);
-            return wallet; // Return unchanged wallet on error
+            return wallet;
           }
         })
       );
       
       setWallets(updatedWallets);
       
-      // Update user context with new balances and persist to localStorage
       if (user) {
         const updatedUser = {
           ...user,
@@ -110,7 +82,6 @@ const WalletDashboard = () => {
       const success = await sendTransaction(wallet, amount, recipient);
       
       if (success) {
-        // Update the specific wallet's balance immediately after successful transaction
         const updatedBalance = await updateWalletBalance(wallet);
         
         const updatedWallets = wallets.map(w => {
@@ -125,20 +96,18 @@ const WalletDashboard = () => {
         
         setWallets(updatedWallets);
         
-        // Create new transaction record
-        const newTransaction = {
-          id: crypto.randomUUID(),
-          type: 'send' as const,
-          amount,
-          currency: wallet.network,
-          address: recipient,
-          timestamp: new Date(),
-          status: 'completed' as const,
-          network: wallet.network
-        };
-        
-        // Update user with new transaction and wallet data
         if (user) {
+          const newTransaction = {
+            id: crypto.randomUUID(),
+            type: 'send' as const,
+            amount,
+            currency: wallet.network,
+            address: recipient,
+            timestamp: new Date(),
+            status: 'completed' as const,
+            network: wallet.network
+          };
+          
           const updatedUser = {
             ...user,
             transactions: [newTransaction, ...(user.transactions || [])],

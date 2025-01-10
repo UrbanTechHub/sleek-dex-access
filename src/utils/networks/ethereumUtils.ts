@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { toast } from "sonner";
 
-// Use a public RPC that allows CORS
+// Use Cloudflare's public Ethereum gateway which allows CORS
 const ETH_RPC_URL = 'https://cloudflare-eth.com';
 
 export const generateEthereumWallet = () => {
@@ -23,22 +23,19 @@ export const getEthereumBalance = async (address: string): Promise<string> => {
   try {
     console.log('Fetching ETH balance for:', address);
     
-    // Create provider with fallback URLs
     const provider = new ethers.JsonRpcProvider(ETH_RPC_URL);
     
-    // Add timeout to prevent hanging
     const balancePromise = provider.getBalance(address);
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Timeout')), 10000)
     );
     
-    const rawBalance = await Promise.race([balancePromise, timeoutPromise]) as bigint;
-    const balance = ethers.formatEther(rawBalance);
+    const rawBalance = await Promise.race([balancePromise, timeoutPromise]);
+    const balance = ethers.formatEther(rawBalance as bigint);
     console.log('ETH balance:', balance);
     return balance;
   } catch (error) {
     console.error('Error fetching ETH balance:', error);
-    // Return current balance instead of 0 to prevent UI disruption
     return '0';
   }
 };
@@ -61,15 +58,13 @@ export const sendEthereumTransaction = async (
   try {
     console.log('Simulating ETH transaction:', { fromAddress, toAddress, amount });
     
-    // Validate address before attempting transaction
     if (!validateEthereumAddress(toAddress)) {
       toast.error('Invalid ETH address');
       return false;
     }
 
     // For now, we're just simulating the transaction
-    // In production, you would use the actual provider and send the transaction
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     toast.success(`Simulated sending ${amount} ETH`);
     return true;
