@@ -8,15 +8,14 @@ const TRON_EVENT_SERVER = 'https://api.trongrid.io';
 // USDT TRC20 contract address on Tron mainnet
 const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
-const getTronWeb = (privateKey?: string): TronWeb => {
+const getTronWeb = (privateKey?: string): typeof TronWeb => {
   try {
-    const tronWeb = new TronWeb(
+    return new (TronWeb as any)(
       TRON_FULL_NODE,
       TRON_SOLIDITY_NODE,
       TRON_EVENT_SERVER,
       privateKey
     );
-    return tronWeb;
   } catch (error) {
     console.error('Error initializing TronWeb:', error);
     throw new Error('Failed to initialize TronWeb');
