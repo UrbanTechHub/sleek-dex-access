@@ -9,13 +9,12 @@ const TRON_EVENT_SERVER = 'https://api.trongrid.io';
 const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
 const getTronWeb = (privateKey?: string) => {
-  const tronWeb = new TronWeb({
-    fullHost: TRON_FULL_NODE,
+  return new TronWeb({
+    fullNode: TRON_FULL_NODE,
     solidityNode: TRON_SOLIDITY_NODE,
     eventServer: TRON_EVENT_SERVER,
     privateKey: privateKey || ''
   });
-  return tronWeb;
 };
 
 export const generateTronWallet = async () => {
@@ -55,7 +54,8 @@ export const getTronBalance = async (address: string): Promise<string> => {
 
 export const validateTronAddress = (address: string): boolean => {
   try {
-    return TronWeb.isAddress(address);
+    // Use TronWeb's address validation utility
+    return TronWeb.utils.crypto.isAddressValid(address);
   } catch {
     return false;
   }
