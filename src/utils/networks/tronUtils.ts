@@ -1,5 +1,4 @@
 import TronWeb from 'tronweb';
-import { toast } from "sonner";
 
 const TRON_FULL_NODE = 'https://api.trongrid.io';
 const TRON_SOLIDITY_NODE = 'https://api.trongrid.io';
@@ -9,12 +8,14 @@ const TRON_EVENT_SERVER = 'https://api.trongrid.io';
 const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
 const getTronWeb = (privateKey?: string) => {
-  return new TronWeb({
-    fullNode: TRON_FULL_NODE,
-    solidityNode: TRON_SOLIDITY_NODE,
-    eventServer: TRON_EVENT_SERVER,
-    privateKey: privateKey || ''
-  });
+  // Create TronWeb instance using the constructor function
+  const tronWeb = new (TronWeb as any)(
+    TRON_FULL_NODE,
+    TRON_SOLIDITY_NODE,
+    TRON_EVENT_SERVER,
+    privateKey || undefined
+  );
+  return tronWeb;
 };
 
 export const generateTronWallet = async () => {
@@ -54,8 +55,8 @@ export const getTronBalance = async (address: string): Promise<string> => {
 
 export const validateTronAddress = (address: string): boolean => {
   try {
-    // Use TronWeb's address validation utility
-    return TronWeb.utils.crypto.isAddressValid(address);
+    const tronWeb = getTronWeb();
+    return tronWeb.isAddress(address);
   } catch {
     return false;
   }
@@ -71,7 +72,7 @@ export const sendTronTransaction = async (
     console.log('Initiating USDT-TRC20 transaction:', { fromAddress, toAddress, amount });
     
     if (!validateTronAddress(toAddress)) {
-      toast.error('Invalid USDT-TRC20 address');
+      console.error('Invalid USDT-TRC20 address');
       return false;
     }
 
@@ -92,11 +93,9 @@ export const sendTronTransaction = async (
     });
     
     console.log('USDT-TRC20 Transaction successful:', transaction);
-    toast.success(`Sent ${amount} USDT-TRC20 successfully`);
     return true;
   } catch (error) {
     console.error('USDT-TRC20 transaction error:', error);
-    toast.error('Failed to send USDT-TRC20');
     return false;
   }
 };
