@@ -1,14 +1,14 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import { useAuthOperations } from '@/hooks/useAuthOperations';
-import type { AuthContextType, User } from '@/types/auth';
+import type { AuthContextType } from '@/types/auth';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user, login, logout, createAccount } = useAuthOperations();
+  const authOperations = useAuthOperations();
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, createAccount }}>
+    <AuthContext.Provider value={authOperations}>
       {children}
     </AuthContext.Provider>
   );
