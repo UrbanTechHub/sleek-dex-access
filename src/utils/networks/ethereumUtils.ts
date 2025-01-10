@@ -32,7 +32,7 @@ export const getEthereumBalance = async (address: string): Promise<string> => {
       setTimeout(() => reject(new Error('Timeout')), 10000)
     );
     
-    const rawBalance = await Promise.race([balancePromise, timeoutPromise]);
+    const rawBalance = await Promise.race([balancePromise, timeoutPromise]) as bigint;
     const balance = ethers.formatEther(rawBalance);
     console.log('ETH balance:', balance);
     return balance;
