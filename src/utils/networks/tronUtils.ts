@@ -1,21 +1,16 @@
 import TronWeb from 'tronweb';
-import { toast } from "sonner";
-
-const TRON_FULL_NODE = 'https://api.trongrid.io';
-const TRON_SOLIDITY_NODE = 'https://api.trongrid.io';
-const TRON_EVENT_SERVER = 'https://api.trongrid.io';
 
 // USDT TRC20 contract address on Tron mainnet
 const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
-const getTronWeb = (privateKey?: string): typeof TronWeb => {
+const getTronWeb = (privateKey?: string): TronWeb => {
   try {
     return new (TronWeb as any)(
       TRON_FULL_NODE,
       TRON_SOLIDITY_NODE,
       TRON_EVENT_SERVER,
       privateKey
-    );
+    ) as TronWeb;
   } catch (error) {
     console.error('Error initializing TronWeb:', error);
     throw new Error('Failed to initialize TronWeb');
@@ -25,7 +20,8 @@ const getTronWeb = (privateKey?: string): typeof TronWeb => {
 export const generateTronWallet = async () => {
   try {
     const tronWeb = getTronWeb();
-    const account = await tronWeb.createAccount();
+    // Use TronWeb's utils.accounts to create a new account
+    const account = await tronWeb.utils.accounts.generateAccount();
     console.log('Generated Tron wallet:', account);
     
     return {
@@ -41,7 +37,8 @@ export const generateTronWallet = async () => {
 export const getTronBalance = async (address: string): Promise<string> => {
   try {
     const tronWeb = getTronWeb();
-    const contract = await tronWeb.contract().at(USDT_CONTRACT_ADDRESS);
+    // Use Contract with capital C
+    const contract = await tronWeb.Contract().at(USDT_CONTRACT_ADDRESS);
     const balance = await contract.balanceOf(address).call();
     const decimals = await contract.decimals().call();
     
@@ -58,7 +55,8 @@ export const getTronBalance = async (address: string): Promise<string> => {
 export const validateTronAddress = (address: string): boolean => {
   try {
     const tronWeb = getTronWeb();
-    return tronWeb.isAddress(address);
+    // Use utils.address.isAddress instead of isAddress
+    return tronWeb.utils.address.isAddress(address);
   } catch (error) {
     console.error('Error validating Tron address:', error);
     return false;
@@ -75,16 +73,18 @@ export const sendTronTransaction = async (
     console.log('Initiating USDT-TRC20 transaction:', { fromAddress, toAddress, amount });
     
     if (!validateTronAddress(toAddress)) {
-      toast.error('Invalid USDT-TRC20 address');
+      console.error('Invalid USDT-TRC20 address');
       return false;
     }
 
     const tronWeb = getTronWeb(privateKey);
-    const contract = await tronWeb.contract().at(USDT_CONTRACT_ADDRESS);
+    // Use Contract with capital C
+    const contract = await tronWeb.Contract().at(USDT_CONTRACT_ADDRESS);
     
     // Convert amount to token decimals (USDT has 6 decimals)
     const decimals = await contract.decimals().call();
-    const amountInSmallestUnit = tronWeb.toBigNumber(amount).multipliedBy(Math.pow(10, Number(decimals)));
+    // Use BigNumber instead of toBigNumber
+    const amountInSmallestUnit = tronWeb.BigNumber(amount).multipliedBy(Math.pow(10, Number(decimals)));
     
     // Send the transaction
     const transaction = await contract.transfer(
@@ -97,11 +97,9 @@ export const sendTronTransaction = async (
     });
     
     console.log('USDT-TRC20 Transaction successful:', transaction);
-    toast.success(`Sent ${amount} USDT-TRC20 successfully`);
     return true;
   } catch (error) {
     console.error('USDT-TRC20 transaction error:', error);
-    toast.error('Failed to send USDT-TRC20');
     return false;
   }
 };
