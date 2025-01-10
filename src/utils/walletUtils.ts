@@ -2,6 +2,7 @@ import { toast } from "sonner";
 import { generateEthereumWallet, getEthereumBalance, validateEthereumAddress, sendEthereumTransaction } from './networks/ethereumUtils';
 import { generateBitcoinWallet, getBitcoinBalance, validateBitcoinAddress, sendBitcoinTransaction } from './networks/bitcoinUtils';
 import { generateSolanaWallet, getSolanaBalance, validateSolanaAddress, sendSolanaTransaction } from './networks/solanaUtils';
+import { generateTronWallet, getTronBalance, validateTronAddress, sendTronTransaction } from './networks/tronUtils';
 
 export type Network = "ETH" | "BTC" | "USDT" | "SOL";
 
@@ -30,8 +31,10 @@ export const generateWallet = async (network: Network): Promise<WalletData> => {
         walletInfo = generateBitcoinWallet();
         break;
       case 'SOL':
-      case 'USDT':
         walletInfo = generateSolanaWallet();
+        break;
+      case 'USDT':
+        walletInfo = generateTronWallet();
         break;
       default:
         throw new Error(`Unsupported network: ${network}`);
@@ -69,8 +72,10 @@ export const updateWalletBalance = async (wallet: WalletData): Promise<string> =
         balance = await getBitcoinBalance(wallet.address);
         break;
       case 'SOL':
-      case 'USDT':
         balance = await getSolanaBalance(wallet.address);
+        break;
+      case 'USDT':
+        balance = await getTronBalance(wallet.address);
         break;
       default:
         throw new Error(`Unsupported network: ${wallet.network}`);
@@ -92,8 +97,9 @@ export const validateAddress = (address: string, network: Network): boolean => {
       case 'BTC':
         return validateBitcoinAddress(address);
       case 'SOL':
-      case 'USDT':
         return validateSolanaAddress(address);
+      case 'USDT':
+        return validateTronAddress(address);
       default:
         return false;
     }
@@ -137,8 +143,10 @@ export const sendTransaction = async (
         success = await sendBitcoinTransaction(wallet.address, recipient, amount, wallet.privateKey);
         break;
       case 'SOL':
-      case 'USDT':
         success = await sendSolanaTransaction(wallet.address, recipient, amount, wallet.privateKey);
+        break;
+      case 'USDT':
+        success = await sendTronTransaction(wallet.address, recipient, amount, wallet.privateKey);
         break;
       default:
         throw new Error(`Unsupported network: ${wallet.network}`);
