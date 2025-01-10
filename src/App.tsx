@@ -7,8 +7,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 
 const App = () => {
   return (
-    <Router>
-      <AuthProvider>
+    <AuthProvider>
+      <Router>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/create-wallet" element={<CreateWallet />} />
@@ -16,8 +16,8 @@ const App = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <Toaster />
-      </AuthProvider>
-    </Router>
+      </Router>
+    </AuthProvider>
   );
 };
 

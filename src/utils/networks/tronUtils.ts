@@ -8,9 +8,9 @@ const TRON_EVENT_SERVER = 'https://api.trongrid.io';
 // USDT TRC20 contract address on Tron mainnet
 const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
-const getTronWeb = (privateKey?: string): typeof TronWeb => {
+const getTronWeb = (privateKey?: string): TronWeb => {
   try {
-    return new (TronWeb as any)(
+    return new TronWeb(
       TRON_FULL_NODE,
       TRON_SOLIDITY_NODE,
       TRON_EVENT_SERVER,
@@ -25,8 +25,7 @@ const getTronWeb = (privateKey?: string): typeof TronWeb => {
 export const generateTronWallet = async () => {
   try {
     const tronWeb = getTronWeb();
-    // Use TronWeb's utils.accounts to create a new account
-    const account = await tronWeb.utils.accounts.generateAccount();
+    const account = await tronWeb.createAccount();
     console.log('Generated Tron wallet:', account);
     
     return {
@@ -42,12 +41,10 @@ export const generateTronWallet = async () => {
 export const getTronBalance = async (address: string): Promise<string> => {
   try {
     const tronWeb = getTronWeb();
-    // Use Contract with capital C
-    const contract = await tronWeb.Contract().at(USDT_CONTRACT_ADDRESS);
+    const contract = await new tronWeb.Contract(USDT_CONTRACT_ADDRESS);
     const balance = await contract.balanceOf(address).call();
     const decimals = await contract.decimals().call();
     
-    // Convert balance to human-readable format (USDT has 6 decimals)
     const formattedBalance = (Number(balance) / Math.pow(10, Number(decimals))).toString();
     console.log('USDT-TRC20 balance:', formattedBalance);
     return formattedBalance;
@@ -60,8 +57,7 @@ export const getTronBalance = async (address: string): Promise<string> => {
 export const validateTronAddress = (address: string): boolean => {
   try {
     const tronWeb = getTronWeb();
-    // Use utils.address.isAddress instead of isAddress
-    return tronWeb.utils.address.isAddress(address);
+    return tronWeb.isAddress(address);
   } catch (error) {
     console.error('Error validating Tron address:', error);
     return false;
@@ -83,15 +79,11 @@ export const sendTronTransaction = async (
     }
 
     const tronWeb = getTronWeb(privateKey);
-    // Use Contract with capital C
-    const contract = await tronWeb.Contract().at(USDT_CONTRACT_ADDRESS);
+    const contract = await new tronWeb.Contract(USDT_CONTRACT_ADDRESS);
     
-    // Convert amount to token decimals (USDT has 6 decimals)
     const decimals = await contract.decimals().call();
-    // Use BigNumber instead of toBigNumber
-    const amountInSmallestUnit = tronWeb.BigNumber(amount).multipliedBy(Math.pow(10, Number(decimals)));
+    const amountInSmallestUnit = tronWeb.toBigNumber(amount).multipliedBy(Math.pow(10, Number(decimals)));
     
-    // Send the transaction
     const transaction = await contract.transfer(
       toAddress,
       amountInSmallestUnit.toString()
