@@ -1,14 +1,15 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import Index from "@/pages/Index";
 import CreateWallet from "@/pages/CreateWallet";
 import WalletDashboard from "@/pages/WalletDashboard";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 const App = () => {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/create-wallet" element={<CreateWallet />} />
@@ -16,8 +17,8 @@ const App = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <Toaster />
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 };
 
