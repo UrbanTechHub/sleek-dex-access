@@ -1,19 +1,31 @@
+import TronWeb from 'tronweb';
 import { toast } from "sonner";
 
-// Note: In a production environment, you would use the actual Tron SDK
-// This is a simplified mock implementation for development
-export const generateTronWallet = () => {
+const TRON_FULL_NODE = 'https://api.trongrid.io';
+const TRON_SOLIDITY_NODE = 'https://api.trongrid.io';
+const TRON_EVENT_SERVER = 'https://api.trongrid.io';
+
+// USDT TRC20 contract address on mainnet
+const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+
+const getTronWeb = (privateKey?: string) => {
+  const tronWeb = new TronWeb({
+    fullHost: TRON_FULL_NODE,
+    solidityNode: TRON_SOLIDITY_NODE,
+    eventServer: TRON_EVENT_SERVER,
+    privateKey: privateKey || ''
+  });
+  return tronWeb;
+};
+
+export const generateTronWallet = async () => {
   try {
-    // Mock implementation - in production, use TronWeb to generate real addresses
-    const mockAddress = `T${Array.from({ length: 33 }, () => 
-      "0123456789abcdef"[Math.floor(Math.random() * 16)]).join('')}`;
-    const mockPrivateKey = Array.from({ length: 64 }, () => 
-      "0123456789abcdef"[Math.floor(Math.random() * 16)]).join('');
-    
-    console.log('Generated USDT-TRC20 wallet:', mockAddress);
+    const tronWeb = getTronWeb();
+    const account = await tronWeb.createAccount();
+    console.log('Generated USDT-TRC20 wallet:', account.address.base58);
     return {
-      address: mockAddress,
-      privateKey: mockPrivateKey,
+      address: account.address.base58,
+      privateKey: account.privateKey,
     };
   } catch (error) {
     console.error('Error generating USDT-TRC20 wallet:', error);
@@ -24,8 +36,17 @@ export const generateTronWallet = () => {
 export const getTronBalance = async (address: string): Promise<string> => {
   try {
     console.log('Fetching USDT-TRC20 balance for:', address);
-    // Mock implementation - in production, use TronWeb to get real balance
-    return "0.00";
+    const tronWeb = getTronWeb();
+    
+    // Get USDT contract instance
+    const contract = await tronWeb.contract().at(USDT_CONTRACT_ADDRESS);
+    
+    // Get balance
+    const balance = await contract.balanceOf(address).call();
+    const formattedBalance = tronWeb.fromSun(balance.toString());
+    
+    console.log('USDT-TRC20 balance:', formattedBalance);
+    return formattedBalance;
   } catch (error) {
     console.error('Error fetching USDT-TRC20 balance:', error);
     return "0.00";
@@ -33,8 +54,11 @@ export const getTronBalance = async (address: string): Promise<string> => {
 };
 
 export const validateTronAddress = (address: string): boolean => {
-  // Basic Tron address validation (starts with T and is 34 characters long)
-  return /^T[A-Za-z0-9]{33}$/.test(address);
+  try {
+    return TronWeb.isAddress(address);
+  } catch {
+    return false;
+  }
 };
 
 export const sendTronTransaction = async (
@@ -51,8 +75,23 @@ export const sendTronTransaction = async (
       return false;
     }
 
-    // Mock implementation - in production, use TronWeb to send real transactions
-    console.log('USDT-TRC20 Transaction successful');
+    const tronWeb = getTronWeb(privateKey);
+    const contract = await tronWeb.contract().at(USDT_CONTRACT_ADDRESS);
+    
+    // Convert amount to sun (smallest unit)
+    const amountInSun = tronWeb.toSun(amount);
+    
+    // Send USDT
+    const transaction = await contract.transfer(
+      toAddress,
+      amountInSun
+    ).send({
+      feeLimit: 100000000,
+      callValue: 0,
+      shouldPollResponse: true
+    });
+    
+    console.log('USDT-TRC20 Transaction successful:', transaction);
     toast.success(`Sent ${amount} USDT-TRC20 successfully`);
     return true;
   } catch (error) {
