@@ -47,6 +47,7 @@ const WalletDashboard = () => {
         user.wallets.map(async (wallet) => {
           try {
             const newBalance = await updateWalletBalance(wallet);
+            console.log('Updated balance:', { network: wallet.network, balance: newBalance });
             return {
               ...wallet,
               balance: newBalance,
@@ -85,6 +86,7 @@ const WalletDashboard = () => {
       if (success && user) {
         // Update balance immediately after successful transaction
         const updatedBalance = await updateWalletBalance(wallet);
+        console.log('Transaction successful, new balance:', updatedBalance);
         
         const updatedWallets = wallets.map(w => {
           if (w.id === wallet.id) {
@@ -115,16 +117,22 @@ const WalletDashboard = () => {
           wallets: updatedWallets
         };
         
-        // Save to storage
+        // Save to storage and update state
         storage.setUser(updatedUser);
         setWallets(updatedWallets);
         
         toast.success(`Successfully sent ${amount} ${wallet.network}`);
         
-        // Trigger another balance update after a short delay
-        setTimeout(() => {
-          void updateAllBalances();
-        }, 5000);
+        // Trigger multiple balance updates to ensure sync
+        const checkBalances = async () => {
+          await updateAllBalances();
+          // Check again after 10 seconds for network confirmation
+          setTimeout(() => {
+            void updateAllBalances();
+          }, 10000);
+        };
+        
+        void checkBalances();
       }
     } catch (error) {
       console.error('Transaction error:', error);
