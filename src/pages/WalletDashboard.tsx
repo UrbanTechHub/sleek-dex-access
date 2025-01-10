@@ -24,12 +24,12 @@ const WalletDashboard = () => {
     }
     setWallets(user.wallets || []);
     
-    // Initial balance update
-    void updateAllBalances();
+    // Initial balance update with error handling
+    void updateAllBalances().catch(console.error);
     
     // Set up automatic balance updates every 30 seconds
     const intervalId = setInterval(() => {
-      void updateAllBalances();
+      void updateAllBalances().catch(console.error);
     }, 30000);
 
     return () => clearInterval(intervalId);
@@ -42,41 +42,46 @@ const WalletDashboard = () => {
     try {
       const updatedWallets = await Promise.all(
         user.wallets.map(async (wallet) => {
-          const newBalance = await updateWalletBalance(wallet);
-          
-          // If balance has increased, create a receive transaction
-          if (parseFloat(newBalance) > parseFloat(wallet.balance)) {
-            const receivedAmount = (parseFloat(newBalance) - parseFloat(wallet.balance)).toString();
+          try {
+            const newBalance = await updateWalletBalance(wallet);
             
-            // Create new receive transaction
-            const newTransaction = {
-              id: crypto.randomUUID(),
-              type: 'receive' as const,
-              amount: receivedAmount,
-              currency: wallet.network,
-              address: wallet.address,
-              timestamp: new Date(),
-              status: 'completed' as const,
-              network: wallet.network
-            };
-            
-            // Update user with new transaction
-            if (user) {
-              const updatedUser = {
-                ...user,
-                transactions: [newTransaction, ...(user.transactions || [])],
+            // If balance has increased, create a receive transaction
+            if (parseFloat(newBalance) > parseFloat(wallet.balance)) {
+              const receivedAmount = (parseFloat(newBalance) - parseFloat(wallet.balance)).toString();
+              
+              // Create new receive transaction
+              const newTransaction = {
+                id: crypto.randomUUID(),
+                type: 'receive' as const,
+                amount: receivedAmount,
+                currency: wallet.network,
+                address: wallet.address,
+                timestamp: new Date(),
+                status: 'completed' as const,
+                network: wallet.network
               };
-              storage.setUser(updatedUser);
+              
+              // Update user with new transaction
+              if (user) {
+                const updatedUser = {
+                  ...user,
+                  transactions: [newTransaction, ...(user.transactions || [])],
+                };
+                storage.setUser(updatedUser);
+              }
+              
+              toast.success(`Received ${receivedAmount} ${wallet.network}`);
             }
             
-            toast.success(`Received ${receivedAmount} ${wallet.network}`);
+            return {
+              ...wallet,
+              balance: newBalance,
+              lastUpdated: new Date(),
+            };
+          } catch (error) {
+            console.error(`Error updating ${wallet.network} balance:`, error);
+            return wallet; // Return unchanged wallet on error
           }
-          
-          return {
-            ...wallet,
-            balance: newBalance,
-            lastUpdated: new Date(),
-          };
         })
       );
       
@@ -202,7 +207,7 @@ const WalletDashboard = () => {
             <CardDescription>Your recent transactions across all networks</CardDescription>
           </CardHeader>
           <CardContent>
-            <TransactionHistory transactions={user.transactions || []} />
+            <TransactionHistory transactions={user?.transactions || []} />
           </CardContent>
         </Card>
       </div>
