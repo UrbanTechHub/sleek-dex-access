@@ -10,7 +10,7 @@ const USDT_CONTRACT_ADDRESS = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
 const getTronWeb = (privateKey?: string) => {
   try {
-    return new TronWeb({
+    return new (TronWeb as any)({
       fullNode: TRON_FULL_NODE,
       solidityNode: TRON_SOLIDITY_NODE,
       eventServer: TRON_EVENT_SERVER,
