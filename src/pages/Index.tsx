@@ -4,10 +4,18 @@ import { Wallet, Key, ArrowRight } from "lucide-react";
 import PasskeyAuth from "@/components/PasskeyAuth";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const [mode, setMode] = useState<'login' | 'create'>('login');
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // If user is already logged in, redirect to dashboard
+  if (user) {
+    navigate('/wallet-dashboard');
+    return null;
+  }
 
   const handleAuthSuccess = () => {
     navigate('/wallet-dashboard');
