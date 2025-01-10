@@ -79,7 +79,6 @@ export const updateWalletBalance = async (wallet: WalletData): Promise<string> =
     return balance;
   } catch (error) {
     console.error(`Error updating ${wallet.network} balance:`, error);
-    toast.error(`Failed to update ${wallet.network} balance`);
     return wallet.balance;
   }
 };

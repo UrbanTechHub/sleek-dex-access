@@ -10,6 +10,7 @@ import WalletActions from "@/components/WalletActions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { storage } from "@/utils/localStorage";
+import type { Transaction } from "@/types/auth";
 
 const WalletDashboard = () => {
   const [wallets, setWallets] = useState<WalletData[]>([]);
@@ -68,7 +69,7 @@ const WalletDashboard = () => {
         storage.setUser(updatedUser);
       }
       
-      toast.success("All balances updated successfully!");
+      console.log('All balances updated successfully');
     } catch (error) {
       console.error('Error updating balances:', error);
       toast.error("Failed to update some balances");
@@ -81,7 +82,8 @@ const WalletDashboard = () => {
     try {
       const success = await sendTransaction(wallet, amount, recipient);
       
-      if (success) {
+      if (success && user) {
+        // Update balance immediately after successful transaction
         const updatedBalance = await updateWalletBalance(wallet);
         
         const updatedWallets = wallets.map(w => {
@@ -94,29 +96,35 @@ const WalletDashboard = () => {
           return w;
         });
         
+        // Create new transaction record
+        const newTransaction: Transaction = {
+          id: crypto.randomUUID(),
+          type: 'send',
+          amount,
+          currency: wallet.network,
+          address: recipient,
+          timestamp: new Date(),
+          status: 'completed',
+          network: wallet.network
+        };
+        
+        // Update user state with new transaction and wallet balances
+        const updatedUser = {
+          ...user,
+          transactions: [newTransaction, ...(user.transactions || [])],
+          wallets: updatedWallets
+        };
+        
+        // Save to storage
+        storage.setUser(updatedUser);
         setWallets(updatedWallets);
         
-        if (user) {
-          const newTransaction = {
-            id: crypto.randomUUID(),
-            type: 'send' as const,
-            amount,
-            currency: wallet.network,
-            address: recipient,
-            timestamp: new Date(),
-            status: 'completed' as const,
-            network: wallet.network
-          };
-          
-          const updatedUser = {
-            ...user,
-            transactions: [newTransaction, ...(user.transactions || [])],
-            wallets: updatedWallets
-          };
-          storage.setUser(updatedUser);
-        }
-        
         toast.success(`Successfully sent ${amount} ${wallet.network}`);
+        
+        // Trigger another balance update after a short delay
+        setTimeout(() => {
+          void updateAllBalances();
+        }, 5000);
       }
     } catch (error) {
       console.error('Transaction error:', error);
