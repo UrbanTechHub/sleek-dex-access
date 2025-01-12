@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wallet, Key, ArrowRight } from "lucide-react";
-import { useState } from "react";
+import { Wallet, Key, ArrowRight, Loader } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -9,14 +9,21 @@ import { toast } from "sonner";
 const Index = () => {
   const [pin, setPin] = useState("");
   const [mode, setMode] = useState<'login' | 'create'>('login');
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { user, login, createAccount } = useAuth();
 
-  // If user is already logged in, redirect to dashboard
-  if (user) {
-    navigate('/wallet-dashboard');
-    return null;
-  }
+  useEffect(() => {
+    console.log("Index component mounted");
+    setIsLoading(false);
+    
+    if (user) {
+      console.log("User found, redirecting to dashboard");
+      navigate('/wallet-dashboard');
+      return;
+    }
+    console.log("No user found, showing login form");
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +38,14 @@ const Index = () => {
       toast.error('Authentication failed. Please try again.');
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
@@ -68,7 +83,7 @@ const Index = () => {
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="pin" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label htmlFor="pin" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Enter PIN
                 </label>
                 <input
