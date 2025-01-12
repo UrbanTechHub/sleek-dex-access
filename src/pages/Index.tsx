@@ -33,11 +33,11 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 md:p-8 animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4 sm:p-6 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col items-center justify-center space-y-8">
+        <div className="flex flex-col items-center justify-center min-h-[80vh] space-y-8">
           <div className="text-center space-y-6">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400 animate-scale-in">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400">
               Secure DEX Wallet
             </h1>
             <p className="text-gray-600 dark:text-gray-300 text-lg sm:text-xl max-w-2xl leading-relaxed">
@@ -47,22 +47,22 @@ const Index = () => {
           </div>
 
           <div className="w-full max-w-md">
-            <Card className="hover:shadow-xl transition-all duration-300 border-2 border-opacity-50 backdrop-blur-sm bg-white/50 dark:bg-gray-900/50">
+            <Card className="border-2 border-opacity-50 backdrop-blur-sm bg-white/50 dark:bg-gray-900/50">
               <CardHeader className="space-y-1">
                 <CardTitle className="flex items-center gap-2 text-2xl">
                   {mode === 'login' ? (
                     <>
-                      <Key className="h-6 w-6 text-purple-600 animate-pulse" />
+                      <Key className="h-6 w-6 text-purple-600" />
                       Login to Wallet
                     </>
                   ) : (
                     <>
-                      <Wallet className="h-6 w-6 text-indigo-600 animate-pulse" />
+                      <Wallet className="h-6 w-6 text-indigo-600" />
                       Create New Wallet
                     </>
                   )}
                 </CardTitle>
-                <CardDescription className="text-base">
+                <CardDescription>
                   {mode === 'login' 
                     ? "Access your existing wallet securely" 
                     : "Set up a new wallet with PIN protection"}
@@ -95,7 +95,7 @@ const Index = () => {
                 </form>
                 <Button 
                   variant="ghost" 
-                  className="w-full group hover:bg-purple-50 dark:hover:bg-gray-800 transition-all duration-300"
+                  className="w-full group"
                   onClick={() => setMode(mode === 'login' ? 'create' : 'login')}
                 >
                   <span className="flex items-center gap-2">
@@ -107,10 +107,6 @@ const Index = () => {
                 </Button>
               </CardContent>
             </Card>
-          </div>
-
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400 animate-fade-in">
-            <p>Secure, decentralized, and always in your control</p>
           </div>
         </div>
       </div>
