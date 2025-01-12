@@ -1,15 +1,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wallet, Key, ArrowRight } from "lucide-react";
-import PasskeyAuth from "@/components/PasskeyAuth";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const Index = () => {
+  const [pin, setPin] = useState("");
   const [mode, setMode] = useState<'login' | 'create'>('login');
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, login, createAccount } = useAuth();
 
   // If user is already logged in, redirect to dashboard
   if (user) {
@@ -17,8 +18,18 @@ const Index = () => {
     return null;
   }
 
-  const handleAuthSuccess = () => {
-    navigate('/wallet-dashboard');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (mode === 'login') {
+        await login(pin);
+      } else {
+        await createAccount(pin);
+      }
+    } catch (error) {
+      console.error('Authentication error:', error);
+      toast.error('Authentication failed. Please try again.');
+    }
   };
 
   return (
@@ -30,7 +41,7 @@ const Index = () => {
               Secure DEX Wallet
             </h1>
             <p className="text-gray-600 dark:text-gray-300 text-lg sm:text-xl max-w-2xl leading-relaxed">
-              Access your decentralized wallet with enhanced security using passkeys. 
+              Access your decentralized wallet with enhanced security using PIN. 
               Trade and manage your crypto assets with confidence.
             </p>
           </div>
@@ -54,11 +65,34 @@ const Index = () => {
                 <CardDescription className="text-base">
                   {mode === 'login' 
                     ? "Access your existing wallet securely" 
-                    : "Set up a new wallet with passkey protection"}
+                    : "Set up a new wallet with PIN protection"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <PasskeyAuth mode={mode} onSuccess={handleAuthSuccess} />
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="pin" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Enter PIN
+                    </label>
+                    <input
+                      id="pin"
+                      type="password"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value)}
+                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-800 dark:border-gray-700"
+                      placeholder="Enter your 6-digit PIN"
+                      minLength={6}
+                      maxLength={6}
+                      required
+                    />
+                  </div>
+                  <Button 
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+                  >
+                    {mode === 'login' ? 'Login' : 'Create Wallet'}
+                  </Button>
+                </form>
                 <Button 
                   variant="ghost" 
                   className="w-full group hover:bg-purple-50 dark:hover:bg-gray-800 transition-all duration-300"
