@@ -9,18 +9,18 @@ import './App.css';
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="system" enableSystem>
-      <AuthProvider>
-        <Router>
+    <Router>
+      <ThemeProvider defaultTheme="system" enableSystem>
+        <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/wallet-dashboard" element={<WalletDashboard />} />
             <Route path="/create-wallet" element={<CreateWallet />} />
           </Routes>
           <Toaster position="top-center" />
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </Router>
   );
 }
 
