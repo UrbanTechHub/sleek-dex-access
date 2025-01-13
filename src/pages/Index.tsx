@@ -15,14 +15,17 @@ const Index = () => {
 
   useEffect(() => {
     console.log("Index component mounted");
-    setIsLoading(false);
+    const checkUser = () => {
+      if (user && window.location.pathname === '/') {
+        console.log("User found, redirecting to dashboard");
+        navigate('/wallet-dashboard');
+      } else {
+        console.log("No user found or not on index, showing login form");
+      }
+      setIsLoading(false);
+    };
     
-    if (user) {
-      console.log("User found, redirecting to dashboard");
-      navigate('/wallet-dashboard');
-      return;
-    }
-    console.log("No user found, showing login form");
+    checkUser();
   }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
