@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 import WalletInfo from "@/components/WalletInfo";
@@ -155,22 +155,22 @@ const WalletDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-secondary p-6 space-y-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-background to-secondary">
+      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-4xl font-bold">Wallet Dashboard</h1>
+            <h1 className="text-3xl font-bold">Wallet Dashboard</h1>
             <p className="text-muted-foreground">Manage your crypto assets</p>
           </div>
-          <Button variant="destructive" onClick={handleLogout}>
+          <Button variant="destructive" onClick={handleLogout} className="shrink-0">
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {wallets.map((wallet) => (
-            <div key={wallet.id}>
+            <div key={wallet.id} className="flex flex-col gap-4">
               <WalletInfo
                 address={wallet.address}
                 network={wallet.network}
@@ -187,12 +187,11 @@ const WalletDashboard = () => {
         </div>
 
         <Card className="backdrop-blur-sm bg-card/90">
-          <CardHeader>
-            <CardTitle>Transaction History</CardTitle>
-            <CardDescription>Your recent transactions across all networks</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TransactionHistory transactions={user?.transactions || []} />
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-semibold mb-4">Transaction History</h2>
+            <div className="overflow-x-auto">
+              <TransactionHistory transactions={user?.transactions || []} />
+            </div>
           </CardContent>
         </Card>
       </div>

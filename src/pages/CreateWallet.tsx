@@ -41,9 +41,9 @@ const CreateWallet = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary p-4 flex items-center justify-center">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Create New Wallet</CardTitle>
-          <CardDescription>
+        <CardHeader className="space-y-2">
+          <CardTitle className="text-2xl font-bold text-center">Create New Wallet</CardTitle>
+          <CardDescription className="text-center">
             {step === 'auth' 
               ? "First, authenticate using your passkey"
               : "Set up your new wallet"}
@@ -53,29 +53,32 @@ const CreateWallet = () => {
           {step === 'auth' ? (
             <PasskeyAuth mode="create" onSuccess={handleAuthSuccess} />
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="space-y-2">
+                <label className="text-sm font-medium">Wallet Name</label>
                 <Input
                   type="text"
                   placeholder="Enter wallet name"
                   value={walletName}
                   onChange={(e) => setWalletName(e.target.value)}
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
+                <label className="text-sm font-medium">Network</label>
                 <Select
                   value={selectedNetwork}
                   onValueChange={setSelectedNetwork}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select network" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ETH">Ethereum</SelectItem>
                     <SelectItem value="SOL">Solana</SelectItem>
                     <SelectItem value="BTC">Bitcoin</SelectItem>
-                    <SelectItem value="TON">TON</SelectItem>
                     <SelectItem value="USDT">USDT</SelectItem>
+                    <SelectItem value="USDC">USDC</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
