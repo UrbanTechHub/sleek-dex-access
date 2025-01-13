@@ -19,10 +19,28 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuth();
+  
+  if (user) {
+    console.log('User found, redirecting to wallet dashboard');
+    return <Navigate to="/wallet-dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Index />} />
+      <Route 
+        path="/" 
+        element={
+          <PublicRoute>
+            <Index />
+          </PublicRoute>
+        } 
+      />
       <Route 
         path="/wallet-dashboard" 
         element={
