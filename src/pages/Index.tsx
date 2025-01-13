@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wallet, Key, ArrowRight, Loader } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -9,46 +9,29 @@ import { toast } from "sonner";
 const Index = () => {
   const [pin, setPin] = useState("");
   const [mode, setMode] = useState<'login' | 'create'>('login');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, login, createAccount } = useAuth();
-
-  useEffect(() => {
-    console.log("Index component mounted");
-    const checkUser = () => {
-      if (user && window.location.pathname === '/') {
-        console.log("User found, redirecting to dashboard");
-        navigate('/wallet-dashboard');
-      } else {
-        console.log("No user found or not on index, showing login form");
-      }
-      setIsLoading(false);
-    };
-    
-    checkUser();
-  }, [user, navigate]);
+  const { login, createAccount } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    
     try {
       if (mode === 'login') {
         await login(pin);
+        navigate('/wallet-dashboard');
       } else {
         await createAccount(pin);
+        navigate('/wallet-dashboard');
       }
     } catch (error) {
       console.error('Authentication error:', error);
       toast.error('Authentication failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
@@ -99,12 +82,17 @@ const Index = () => {
                   minLength={6}
                   maxLength={6}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <Button 
                 type="submit"
                 className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
+                disabled={isLoading}
               >
+                {isLoading ? (
+                  <Loader className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
                 {mode === 'login' ? 'Login' : 'Create Wallet'}
               </Button>
             </form>
@@ -112,6 +100,7 @@ const Index = () => {
               variant="ghost" 
               className="w-full"
               onClick={() => setMode(mode === 'login' ? 'create' : 'login')}
+              disabled={isLoading}
             >
               <span className="flex items-center gap-2">
                 {mode === 'login' 
