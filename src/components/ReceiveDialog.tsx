@@ -19,11 +19,13 @@ interface ReceiveDialogProps {
 const ReceiveDialog = ({ wallet }: ReceiveDialogProps) => {
   const copyAddress = () => {
     navigator.clipboard.writeText(wallet.address);
-    toast.success(`${wallet.network} address copied to clipboard!`);
+    toast.success(`${wallet.network === 'TRON' ? 'USDT (TRC20)' : wallet.network} address copied to clipboard!`);
   };
 
   const getQRValue = () => {
     switch (wallet.network) {
+      case 'TRON':
+        return `tron:${wallet.address}`;
       case 'BTC':
         return `bitcoin:${wallet.address}`;
       default:
@@ -41,9 +43,9 @@ const ReceiveDialog = ({ wallet }: ReceiveDialogProps) => {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Receive {wallet.network}</DialogTitle>
+          <DialogTitle>Receive {wallet.network === 'TRON' ? 'USDT (TRC20)' : wallet.network}</DialogTitle>
           <DialogDescription>
-            Share your {wallet.network} wallet address to receive funds
+            Share your {wallet.network === 'TRON' ? 'TRON' : wallet.network} wallet address to receive funds
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -51,7 +53,7 @@ const ReceiveDialog = ({ wallet }: ReceiveDialogProps) => {
             <QRCodeSVG value={getQRValue()} size={200} />
           </div>
           <div className="space-y-2">
-            <p className="text-sm font-medium">Your {wallet.network} Address:</p>
+            <p className="text-sm font-medium">Your {wallet.network === 'TRON' ? 'TRON' : wallet.network} Address:</p>
             <div className="flex items-center gap-2">
               <code className="flex-1 p-2 bg-muted rounded text-sm break-all">
                 {wallet.address}

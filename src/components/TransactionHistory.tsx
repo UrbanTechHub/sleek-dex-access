@@ -10,7 +10,7 @@ export interface Transaction {
   address: string;
   timestamp: Date;
   status: 'pending' | 'completed' | 'failed';
-  network?: 'ETH' | 'BTC' | 'USDT' | 'SOL' | 'USDC';
+  network?: 'ETH' | 'BTC' | 'TRON' | 'SOL' | 'USDC';
 }
 
 interface TransactionHistoryProps {

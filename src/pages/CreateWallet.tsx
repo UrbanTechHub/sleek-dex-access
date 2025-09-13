@@ -77,7 +77,7 @@ const CreateWallet = () => {
                     <SelectItem value="ETH">Ethereum</SelectItem>
                     <SelectItem value="SOL">Solana</SelectItem>
                     <SelectItem value="BTC">Bitcoin</SelectItem>
-                    <SelectItem value="USDT">USDT</SelectItem>
+                    <SelectItem value="TRON">USDT (TRC20)</SelectItem>
                     <SelectItem value="USDC">USDC</SelectItem>
                   </SelectContent>
                 </Select>

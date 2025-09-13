@@ -22,8 +22,15 @@ const SendTokenDialog = ({ wallet, onSend }: SendTokenDialogProps) => {
       case 'BTC':
         // Basic Bitcoin address validation (starts with 1, 3, or bc1)
         return /^(1|3|bc1)[a-zA-Z0-9]{25,62}$/.test(address);
+      case 'TRON':
+        // TRON address validation (starts with T and is 34 characters)
+        return /^T[a-zA-Z0-9]{33}$/.test(address);
+      case 'SOL':
+        // Solana address validation (base58, 32-44 characters)
+        return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address);
+      case 'ETH':
       default:
-        // ETH/USDT address validation (0x followed by 40 hex characters)
+        // ETH address validation (0x followed by 40 hex characters)
         return /^0x[a-fA-F0-9]{40}$/.test(address);
     }
   };
@@ -65,14 +72,14 @@ const SendTokenDialog = ({ wallet, onSend }: SendTokenDialogProps) => {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Send {wallet.network}</DialogTitle>
+          <DialogTitle>Send {wallet.network === 'TRON' ? 'USDT (TRC20)' : wallet.network}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="amount">Amount</Label>
             <Input
               id="amount"
-              placeholder={`0.0 ${wallet.network}`}
+              placeholder={`0.0 ${wallet.network === 'TRON' ? 'USDT' : wallet.network}`}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
@@ -81,13 +88,13 @@ const SendTokenDialog = ({ wallet, onSend }: SendTokenDialogProps) => {
             <Label htmlFor="recipient">Recipient Address</Label>
             <Input
               id="recipient"
-              placeholder={`Enter ${wallet.network} address`}
+              placeholder={`Enter ${wallet.network === 'TRON' ? 'TRON' : wallet.network} address`}
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
             />
           </div>
           <Button className="w-full" onClick={handleSend}>
-            Send {wallet.network}
+            Send {wallet.network === 'TRON' ? 'USDT' : wallet.network}
           </Button>
         </div>
       </DialogContent>

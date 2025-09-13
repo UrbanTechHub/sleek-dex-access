@@ -4,7 +4,7 @@ import { generateBitcoinWallet, getBitcoinBalance, validateBitcoinAddress, sendB
 import { generateSolanaWallet, getSolanaBalance, validateSolanaAddress, sendSolanaTransaction } from './networks/solanaUtils';
 import { generateTronWallet, getTronBalance, validateTronAddress, sendTronTransaction } from './networks/tronUtils';
 
-export type Network = "ETH" | "BTC" | "USDT" | "SOL";
+export type Network = "ETH" | "BTC" | "TRON" | "SOL";
 
 export interface WalletData {
   id: string;
@@ -19,7 +19,7 @@ export interface WalletData {
 export const generateWallet = async (network: Network): Promise<WalletData> => {
   console.log('Generating wallet for network:', network);
   const id = crypto.randomUUID();
-  const name = `My ${network} Wallet`;
+  const name = network === 'TRON' ? 'My USDT (TRC20) Wallet' : `My ${network} Wallet`;
   let walletInfo;
 
   try {
@@ -33,7 +33,7 @@ export const generateWallet = async (network: Network): Promise<WalletData> => {
       case 'SOL':
         walletInfo = generateSolanaWallet();
         break;
-      case 'USDT':
+      case 'TRON':
         walletInfo = generateTronWallet();
         break;
       default:
@@ -74,7 +74,7 @@ export const updateWalletBalance = async (wallet: WalletData): Promise<string> =
       case 'SOL':
         balance = await getSolanaBalance(wallet.address);
         break;
-      case 'USDT':
+      case 'TRON':
         balance = await getTronBalance(wallet.address);
         break;
       default:
@@ -98,7 +98,7 @@ export const validateAddress = (address: string, network: Network): boolean => {
         return validateBitcoinAddress(address);
       case 'SOL':
         return validateSolanaAddress(address);
-      case 'USDT':
+      case 'TRON':
         return validateTronAddress(address);
       default:
         return false;
@@ -145,7 +145,7 @@ export const sendTransaction = async (
       case 'SOL':
         success = await sendSolanaTransaction(wallet.address, recipient, amount, wallet.privateKey);
         break;
-      case 'USDT':
+      case 'TRON':
         success = await sendTronTransaction(wallet.address, recipient, amount, wallet.privateKey);
         break;
       default:

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 interface WalletInfoProps {
   address: string;
-  network: 'ETH' | 'BTC' | 'USDT' | 'SOL' | 'USDC';
+  network: 'ETH' | 'BTC' | 'TRON' | 'SOL' | 'USDC';
   balance: string;
 }
 
@@ -28,8 +28,8 @@ const WalletInfo = ({ address, network, balance }: WalletInfoProps) => {
         // USDC on Solana
         explorerUrl = `https://explorer.solana.com/address/${address}/tokens`;
         break;
-      case 'USDT':
-        explorerUrl = `https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7?a=${address}`;
+      case 'TRON':
+        explorerUrl = `https://tronscan.org/#/address/${address}`;
         break;
       case 'ETH':
       default:
@@ -44,8 +44,8 @@ const WalletInfo = ({ address, network, balance }: WalletInfoProps) => {
         return 'from-blue-500 to-purple-500';
       case 'BTC':
         return 'from-orange-500 to-yellow-500';
-      case 'USDT':
-        return 'from-green-500 to-emerald-500';
+      case 'TRON':
+        return 'from-red-500 to-pink-500';
       case 'SOL':
         return 'from-purple-500 to-indigo-500';
       case 'USDC':
@@ -65,13 +65,13 @@ const WalletInfo = ({ address, network, balance }: WalletInfoProps) => {
     <Card className={`bg-gradient-to-br ${getNetworkColor()} text-white shadow-xl hover:shadow-2xl transition-all duration-300`}>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          {network} Wallet
+          {network === 'TRON' ? 'USDT (TRC20)' : network} Wallet
           <Button variant="ghost" size="icon" onClick={copyAddress} className="text-white hover:text-white/80">
             <Copy className="h-4 w-4" />
           </Button>
         </CardTitle>
         <CardDescription className="text-white/90">
-          Balance: {formatBalance(balance, network)} {network}
+          Balance: {formatBalance(balance, network)} {network === 'TRON' ? 'USDT' : network}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
