@@ -15,10 +15,12 @@ import type { Transaction } from "@/types/auth";
 const WalletDashboard = () => {
   const [wallets, setWallets] = useState<WalletData[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (isLoading) return; // Wait for auth to initialize
+    
     if (!user) {
       navigate('/');
       return;
@@ -36,7 +38,7 @@ const WalletDashboard = () => {
     }, 30000);
 
     return () => clearInterval(intervalId);
-  }, [user, navigate]);
+  }, [user, navigate, isLoading]);
 
   const updateAllBalances = async () => {
     if (isUpdating || !user?.wallets) return;
@@ -67,7 +69,7 @@ const WalletDashboard = () => {
           ...user,
           wallets: updatedWallets
         };
-        storage.setUser(updatedUser);
+        await storage.saveUserToFlashDrive();
       }
       
       console.log('All balances updated successfully');
@@ -117,8 +119,8 @@ const WalletDashboard = () => {
           wallets: updatedWallets
         };
         
-        // Save to storage and update state
-        storage.setUser(updatedUser);
+        // Save to flash drive and update state
+        await storage.saveUserToFlashDrive();
         setWallets(updatedWallets);
         
         toast.success(`Successfully sent ${amount} ${wallet.network}`);
@@ -149,6 +151,17 @@ const WalletDashboard = () => {
       toast.error('Failed to logout');
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-secondary flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Connecting to flash drive...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return null;

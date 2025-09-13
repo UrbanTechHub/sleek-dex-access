@@ -1,91 +1,148 @@
-import type { User } from '@/types/auth';
-import { StorageKeys } from './storageKeys';
+import { User } from '@/types/auth';
+import { flashDriveStorage, requireFlashDrive } from './flashDriveStorage';
 
-class LocalStorageService {
-  private readonly STORAGE_KEY = StorageKeys.WALLET_USER;
+interface StorageService {
+  getUser: () => User | null;
+  setUser: (user: User) => boolean;
+  removeUser: () => boolean;
+  isAvailable: () => Promise<boolean>;
+  loadUserFromFlashDrive: () => Promise<User | null>;
+  saveUserToFlashDrive: () => Promise<boolean>;
+}
+
+class FlashDriveStorageService implements StorageService {
+  private cachedUser: User | null = null;
+
+  async isAvailable(): Promise<boolean> {
+    return await requireFlashDrive();
+  }
 
   getUser(): User | null {
+    // Return cached user if available
+    return this.cachedUser;
+  }
+
+  async loadUserFromFlashDrive(): Promise<User | null> {
     try {
-      const userData = window.localStorage.getItem(this.STORAGE_KEY);
-      if (!userData) {
-        console.log('No user data found in storage');
-        return null;
-      }
-      const parsedData = JSON.parse(userData);
-      
-      // Convert string timestamps to Date objects
-      if (parsedData.transactions) {
-        parsedData.transactions = parsedData.transactions.map((tx: any) => ({
-          ...tx,
-          timestamp: new Date(tx.timestamp)
-        }));
-      }
-      
-      if (parsedData.wallets) {
-        parsedData.wallets = parsedData.wallets.map((wallet: any) => ({
-          ...wallet,
-          lastUpdated: new Date(wallet.lastUpdated)
-        }));
-      }
-      
-      const user = parsedData as User;
-      console.log('Retrieved user from storage:', user);
+      const user = await flashDriveStorage.loadUserData();
+      this.cachedUser = user;
+      console.log('Loaded user from flash drive:', user ? 'Success' : 'No data found');
       return user;
     } catch (error) {
-      console.error('Error reading user data:', error);
+      console.error('Failed to load user from flash drive:', error);
       return null;
     }
   }
-  
-  setUser(user: User): void {
+
+  setUser(user: User): boolean {
     try {
-      if (!user || !user.id || !user.pin || !Array.isArray(user.wallets)) {
-        console.error('Invalid user data structure:', user);
-        throw new Error('Invalid user data structure');
-      }
+      this.cachedUser = user;
       
-      // Ensure we're storing the complete user object
-      const userToStore = {
-        ...user,
-        wallets: user.wallets.map(wallet => ({
-          ...wallet,
-          lastUpdated: new Date()
-        }))
-      };
+      // Save to flash drive asynchronously
+      flashDriveStorage.saveUserData(user).catch(error => {
+        console.error('Background save to flash drive failed:', error);
+      });
       
-      window.localStorage.setItem(this.STORAGE_KEY, JSON.stringify(userToStore));
-      console.log('Successfully saved user data:', userToStore);
+      console.log('User data cached and queued for flash drive save');
+      return true;
     } catch (error) {
-      console.error('Error saving user data:', error);
-      throw error;
-    }
-  }
-  
-  removeUser(): void {
-    try {
-      window.localStorage.removeItem(this.STORAGE_KEY);
-      console.log('Successfully removed user data');
-    } catch (error) {
-      console.error('Error removing user data:', error);
-      throw error;
+      console.error('Failed to cache user data:', error);
+      return false;
     }
   }
 
-  clearAll(): void {
-    try {
-      window.localStorage.clear();
-      console.log('Cleared all storage data');
-    } catch (error) {
-      console.error('Error clearing storage:', error);
-      throw error;
+  async saveUserToFlashDrive(): Promise<boolean> {
+    if (!this.cachedUser) {
+      console.log('No cached user data to save');
+      return false;
     }
+
+    return await flashDriveStorage.saveUserData(this.cachedUser);
   }
 
-  hasExistingWallet(): boolean {
-    const user = this.getUser();
-    console.log('Checking for existing wallet:', user !== null);
-    return user !== null;
+  removeUser(): boolean {
+    try {
+      this.cachedUser = null;
+      
+      // Clear from flash drive asynchronously
+      flashDriveStorage.clearUserData().catch(error => {
+        console.error('Background clear from flash drive failed:', error);
+      });
+      
+      console.log('User data cleared from cache and flash drive');
+      return true;
+    } catch (error) {
+      console.error('Failed to clear user data:', error);
+      return false;
+    }
   }
 }
 
-export const storage = new LocalStorageService();
+// Legacy localStorage service for fallback
+class LocalStorageService implements StorageService {
+  private readonly STORAGE_KEY = 'wallet_user_data';
+
+  async isAvailable(): Promise<boolean> {
+    return typeof localStorage !== 'undefined';
+  }
+
+  getUser(): User | null {
+    try {
+      const data = localStorage.getItem(this.STORAGE_KEY);
+      if (!data) return null;
+      
+      const parsed = JSON.parse(data);
+      console.log('Loaded user from localStorage');
+      return parsed;
+    } catch (error) {
+      console.error('Failed to load user from localStorage:', error);
+      return null;
+    }
+  }
+
+  async loadUserFromFlashDrive(): Promise<User | null> {
+    // Fallback to localStorage
+    return this.getUser();
+  }
+
+  setUser(user: User): boolean {
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(user));
+      console.log('Successfully saved user data to localStorage');
+      return true;
+    } catch (error) {
+      console.error('Failed to save user to localStorage:', error);
+      return false;
+    }
+  }
+
+  async saveUserToFlashDrive(): Promise<boolean> {
+    // Fallback to localStorage
+    if (!this.cachedUser) return false;
+    return this.setUser(this.cachedUser);
+  }
+
+  private cachedUser: User | null = null;
+
+  removeUser(): boolean {
+    try {
+      localStorage.removeItem(this.STORAGE_KEY);
+      console.log('User data removed from localStorage');
+      return true;
+    } catch (error) {
+      console.error('Failed to remove user from localStorage:', error);
+      return false;
+    }
+  }
+}
+
+// Export the appropriate storage service
+export const storage: FlashDriveStorageService = new FlashDriveStorageService();
+
+// Keep localStorage as fallback
+export const localStorageFallback: LocalStorageService = new LocalStorageService();
+
+// Helper to ensure flash drive is connected
+export const ensureFlashDriveAccess = async (): Promise<boolean> => {
+  return await storage.isAvailable();
+};

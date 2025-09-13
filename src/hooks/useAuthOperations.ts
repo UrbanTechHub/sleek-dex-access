@@ -2,29 +2,58 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { generateWallet } from '@/utils/walletUtils';
-import { storage } from '@/utils/localStorage';
+import { storage, ensureFlashDriveAccess } from '@/utils/localStorage';
+import { flashDriveStorage } from '@/utils/flashDriveStorage';
 import type { User } from '@/types/auth';
 
 export const useAuthOperations = () => {
-  const [user, setUser] = useState<User | null>(() => {
-    const storedUser = storage.getUser();
-    console.log('Initial user state:', storedUser);
-    return storedUser;
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) {
-      storage.setUser(user);
-      console.log('Updated user in storage:', user);
+    const initializeAuth = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Try to load user data from flash drive
+        const storedUser = await storage.loadUserFromFlashDrive();
+        if (storedUser) {
+          console.log('Initial user state loaded from flash drive:', storedUser);
+          setUser(storedUser);
+        } else {
+          console.log('No user data found on flash drive');
+        }
+      } catch (error) {
+        console.error('Failed to initialize auth from flash drive:', error);
+        toast.error('Failed to connect to flash drive. Please ensure it is connected.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (user && !isLoading) {
+      // Save user data to flash drive whenever user state changes
+      storage.saveUserToFlashDrive().catch(console.error);
     }
-  }, [user]);
+  }, [user, isLoading]);
 
   const createAccount = async (pin: string) => {
     try {
       if (!pin || pin.length < 6) {
         toast.error('PIN must be at least 6 characters long');
         throw new Error('Invalid PIN');
+      }
+
+      // Ensure flash drive access before creating account
+      const hasAccess = await ensureFlashDriveAccess();
+      if (!hasAccess) {
+        toast.error('Flash drive access required to create wallet');
+        throw new Error('Flash drive access required');
       }
 
       const userId = crypto.randomUUID();
@@ -43,11 +72,17 @@ export const useAuthOperations = () => {
         transactions: [],
       };
 
-      storage.setUser(newUser);
       setUser(newUser);
       
-      console.log('New account created:', newUser);
-      toast.success('Account created successfully!');
+      // Save immediately to flash drive
+      const saved = await storage.saveUserToFlashDrive();
+      if (!saved) {
+        toast.error('Failed to save wallet to flash drive');
+        throw new Error('Failed to save to flash drive');
+      }
+      
+      console.log('New account created and saved to flash drive:', newUser);
+      toast.success('Account created and saved to flash drive!');
       navigate('/wallet-dashboard');
     } catch (error) {
       console.error('Account creation error:', error);
@@ -63,12 +98,20 @@ export const useAuthOperations = () => {
         throw new Error('Invalid PIN');
       }
 
-      const userData = storage.getUser();
-      console.log('Retrieved user data for login:', userData);
+      // Ensure flash drive access before login
+      const hasAccess = await ensureFlashDriveAccess();
+      if (!hasAccess) {
+        toast.error('Flash drive access required to login');
+        throw new Error('Flash drive access required');
+      }
+
+      // Load user data from flash drive
+      const userData = await storage.loadUserFromFlashDrive();
+      console.log('Retrieved user data for login from flash drive:', userData);
 
       if (!userData) {
-        console.log('No user account found in storage');
-        toast.error('No wallet found. Please create one first.');
+        console.log('No user account found on flash drive');
+        toast.error('No wallet found on flash drive. Please create one first.');
         throw new Error('No wallet found');
       }
 
@@ -78,7 +121,7 @@ export const useAuthOperations = () => {
       }
 
       setUser(userData);
-      console.log('Login successful:', userData);
+      console.log('Login successful with flash drive data:', userData);
       toast.success('Login successful!');
       navigate('/wallet-dashboard');
     } catch (error) {
@@ -91,6 +134,10 @@ export const useAuthOperations = () => {
     try {
       setUser(null);
       console.log('User logged out successfully');
+      
+      // Disconnect from flash drive
+      flashDriveStorage.disconnect();
+      
       navigate('/');
       toast.success('Logged out successfully');
     } catch (error) {
@@ -105,5 +152,6 @@ export const useAuthOperations = () => {
     login,
     logout,
     createAccount,
+    isLoading,
   };
 };

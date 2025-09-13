@@ -31,4 +31,5 @@ export interface AuthContextType {
   login: (pin: string) => Promise<void>;
   logout: () => void;
   createAccount: (pin: string) => Promise<void>;
+  isLoading: boolean;
 }
