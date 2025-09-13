@@ -5,69 +5,42 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import Index from '@/pages/Index';
 import WalletDashboard from '@/pages/WalletDashboard';
 import CreateWallet from '@/pages/CreateWallet';
-import { useAuth } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import PublicRoute from '@/components/PublicRoute';
 import './App.css';
-
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
-  
-  if (!user) {
-    console.log('No user found, redirecting to login');
-    return <Navigate to="/" replace />;
-  }
-
-  return <>{children}</>;
-};
-
-const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
-  
-  if (user) {
-    console.log('User found, redirecting to wallet dashboard');
-    return <Navigate to="/wallet-dashboard" replace />;
-  }
-
-  return <>{children}</>;
-};
-
-function AppRoutes() {
-  return (
-    <Routes>
-      <Route 
-        path="/" 
-        element={
-          <PublicRoute>
-            <Index />
-          </PublicRoute>
-        } 
-      />
-      <Route 
-        path="/wallet-dashboard" 
-        element={
-          <ProtectedRoute>
-            <WalletDashboard />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/create-wallet" 
-        element={
-          <ProtectedRoute>
-            <CreateWallet />
-          </ProtectedRoute>
-        } 
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-}
 
 function App() {
   return (
     <Router>
       <ThemeProvider defaultTheme="system" enableSystem>
         <AuthProvider>
-          <AppRoutes />
+          <Routes>
+            <Route 
+              path="/" 
+              element={
+                <PublicRoute>
+                  <Index />
+                </PublicRoute>
+              } 
+            />
+            <Route 
+              path="/wallet-dashboard" 
+              element={
+                <ProtectedRoute>
+                  <WalletDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/create-wallet" 
+              element={
+                <ProtectedRoute>
+                  <CreateWallet />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
           <Toaster position="top-center" />
         </AuthProvider>
       </ThemeProvider>
