@@ -103,7 +103,7 @@ const WalletDashboard = () => {
           id: crypto.randomUUID(),
           type: 'send',
           amount,
-          currency: wallet.network,
+          currency: wallet.network === 'TRON' ? 'USDT' : wallet.network,
           address: recipient,
           timestamp: new Date(),
           status: 'completed',
