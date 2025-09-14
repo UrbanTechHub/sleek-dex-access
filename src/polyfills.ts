@@ -18,7 +18,7 @@ window.process = {
   env: { ...window.process?.env }
 };
 
-// Add require polyfill for crypto libraries
+// Add require polyfill for crypto libraries (only for specific modules that need it)
 (window as any).require = (window as any).require || function(id: string) {
   if (id === 'buffer') {
     return { Buffer };
@@ -26,5 +26,6 @@ window.process = {
   if (id === 'crypto') {
     return window.crypto;
   }
+  console.warn(`Module '${id}' requested via require() - consider using ES6 imports instead`);
   throw new Error(`Module '${id}' not found in browser environment`);
 };

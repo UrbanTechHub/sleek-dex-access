@@ -1,7 +1,5 @@
 import { toast } from 'sonner';
-
-// Use TronWeb for proper TRON address generation
-const TronWeb = (window as any).TronWeb || require('tronweb');
+import TronWeb from 'tronweb';
 
 export const generateTronWallet = () => {
   try {
