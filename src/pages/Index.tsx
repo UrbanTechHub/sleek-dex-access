@@ -57,8 +57,8 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">Secure Wallet</h1>
-          <p className="text-muted-foreground">Your crypto, secured on your flash drive</p>
+          <h1 className="text-4xl font-bold tracking-tight">Secure Dex Wallet</h1>
+          <p className="text-muted-foreground">Decentralized trading with ultimate security on your flash drive</p>
         </div>
         
         <FlashDriveStatus 
