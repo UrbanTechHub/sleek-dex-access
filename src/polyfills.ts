@@ -1,5 +1,14 @@
 import { Buffer } from 'buffer';
 
+// Global type declarations
+declare global {
+  interface Window {
+    Buffer: typeof Buffer;
+    process: any;
+    require: any;
+  }
+}
+
 // Add Buffer to the global scope
 window.Buffer = Buffer;
 
@@ -7,4 +16,15 @@ window.Buffer = Buffer;
 window.process = {
   ...window.process,
   env: { ...window.process?.env }
+};
+
+// Add require polyfill for crypto libraries
+(window as any).require = (window as any).require || function(id: string) {
+  if (id === 'buffer') {
+    return { Buffer };
+  }
+  if (id === 'crypto') {
+    return window.crypto;
+  }
+  throw new Error(`Module '${id}' not found in browser environment`);
 };

@@ -31,5 +31,6 @@ export default defineConfig(({ mode }) => ({
   define: {
     'process.env': {},
     global: 'globalThis',
+    'require': 'window.require',
   },
 }));
