@@ -14,7 +14,15 @@ export const useAuthOperations = () => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        console.log('Starting auth initialization...');
         setIsLoading(true);
+        
+        // Check if flash drive is supported first
+        if (!flashDriveStorage.isSupported) {
+          console.log('Flash drive not supported, skipping initialization');
+          setIsLoading(false);
+          return;
+        }
         
         // Try to load user data from flash drive
         const storedUser = await storage.loadUserFromFlashDrive();
@@ -26,8 +34,9 @@ export const useAuthOperations = () => {
         }
       } catch (error) {
         console.error('Failed to initialize auth from flash drive:', error);
-        toast.error('Failed to connect to flash drive. Please ensure it is connected.');
+        // Don't show error toast on initialization - just log it
       } finally {
+        console.log('Auth initialization complete, setting loading to false');
         setIsLoading(false);
       }
     };
