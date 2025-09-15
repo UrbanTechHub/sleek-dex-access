@@ -17,23 +17,33 @@ export const useAuthOperations = () => {
         console.log('Starting auth initialization...');
         setIsLoading(true);
         
-        // Check if flash drive is supported first
-        if (!flashDriveStorage.isSupported) {
-          console.log('Flash drive not supported, skipping initialization');
-          setIsLoading(false);
-          return;
-        }
-        
-        // Try to load user data from flash drive
-        const storedUser = await storage.loadUserFromFlashDrive();
-        if (storedUser) {
-          console.log('Initial user state loaded from flash drive:', storedUser);
-          setUser(storedUser);
+        // Check storage mode
+        if (window.parent !== window) {
+          console.log('Preview mode - checking localStorage');
+          const storedUser = storage.getUser();
+          if (storedUser) {
+            console.log('Initial user state loaded from localStorage:', storedUser);
+            setUser(storedUser);
+          } else {
+            console.log('No user data found in localStorage');
+          }
         } else {
-          console.log('No user data found on flash drive');
+          // Normal browser mode - try flash drive if supported
+          if (!flashDriveStorage.isSupported) {
+            console.log('Flash drive not supported, skipping initialization');
+          } else {
+            // Try to load user data from flash drive
+            const storedUser = await storage.loadUserFromFlashDrive();
+            if (storedUser) {
+              console.log('Initial user state loaded from flash drive:', storedUser);
+              setUser(storedUser);
+            } else {
+              console.log('No user data found on flash drive');
+            }
+          }
         }
       } catch (error) {
-        console.error('Failed to initialize auth from flash drive:', error);
+        console.error('Failed to initialize auth:', error);
         // Don't show error toast on initialization - just log it
       } finally {
         console.log('Auth initialization complete, setting loading to false');
@@ -60,15 +70,21 @@ export const useAuthOperations = () => {
         throw new Error('Invalid PIN');
       }
 
-      // Ensure flash drive access before creating account
-      console.log('Checking flash drive access...');
-      const hasAccess = await ensureFlashDriveAccess();
-      if (!hasAccess) {
-        console.error('Flash drive access denied');
-        toast.error('Flash drive access required to create wallet');
-        throw new Error('Flash drive access required');
+      // Check if we're in preview mode (iframe)
+      if (window.parent !== window) {
+        console.log('Running in preview mode - using localStorage fallback');
+        toast.info('Running in preview mode. For full flash drive support, open in new tab.');
+      } else {
+        // Ensure flash drive access before creating account
+        console.log('Checking flash drive access...');
+        const hasAccess = await ensureFlashDriveAccess();
+        if (!hasAccess) {
+          console.error('Flash drive access denied');
+          toast.error('Flash drive access required to create wallet');
+          throw new Error('Flash drive access required');
+        }
+        console.log('Flash drive access confirmed');
       }
-      console.log('Flash drive access confirmed');
 
       const userId = crypto.randomUUID();
       console.log('Generated user ID:', userId);
@@ -122,17 +138,24 @@ export const useAuthOperations = () => {
       console.log('Setting user in context...');
       setUser(newUser);
       
-      // Save immediately to flash drive
-      console.log('Saving user data to flash drive...');
-      const saved = await storage.saveUserToFlashDrive();
-      if (!saved) {
-        console.error('Failed to save user data to flash drive');
-        toast.error('Failed to save wallet to flash drive');
-        throw new Error('Failed to save to flash drive');
+      // Save to storage (flash drive if available, localStorage as fallback)
+      console.log('Saving user data...');
+      if (window.parent !== window) {
+        // Preview mode - use localStorage fallback
+        console.log('Using localStorage fallback in preview mode');
+        storage.setUser(newUser);
+      } else {
+        // Try flash drive, fallback to localStorage
+        const saved = await storage.saveUserToFlashDrive();
+        if (!saved) {
+          console.log('Flash drive save failed, using localStorage fallback');
+          storage.setUser(newUser);
+        }
       }
       
       console.log('Account creation completed successfully');
-      toast.success('Account created and saved to flash drive!');
+      const storageType = window.parent !== window ? 'localStorage' : 'flash drive';
+      toast.success(`Account created and saved to ${storageType}!`);
       navigate('/wallet-dashboard');
     } catch (error) {
       console.error('Account creation error:', error);
@@ -148,7 +171,30 @@ export const useAuthOperations = () => {
         throw new Error('Invalid PIN');
       }
 
-      // Ensure flash drive access before login
+      // Check if we're in preview mode
+      if (window.parent !== window) {
+        console.log('Login in preview mode - using localStorage');
+        const userData = storage.getUser();
+        
+        if (!userData) {
+          console.log('No user account found in localStorage');
+          toast.error('No wallet found. Please create one first.');
+          throw new Error('No wallet found');
+        }
+
+        if (userData.pin !== pin) {
+          toast.error('Incorrect PIN');
+          throw new Error('Invalid PIN');
+        }
+
+        setUser(userData);
+        console.log('Login successful with localStorage data:', userData);
+        toast.success('Login successful!');
+        navigate('/wallet-dashboard');
+        return;
+      }
+
+      // Normal browser context - use flash drive
       const hasAccess = await ensureFlashDriveAccess();
       if (!hasAccess) {
         toast.error('Flash drive access required to login');

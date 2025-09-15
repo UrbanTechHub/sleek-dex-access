@@ -14,6 +14,10 @@ class FlashDriveStorageService implements StorageService {
   private cachedUser: User | null = null;
 
   async isAvailable(): Promise<boolean> {
+    // In cross-origin iframe (like Lovable preview), flash drive isn't available
+    if (window.parent !== window) {
+      return false;
+    }
     return await requireFlashDrive();
   }
 
@@ -135,11 +139,24 @@ class LocalStorageService implements StorageService {
   }
 }
 
-// Export the appropriate storage service
-export const storage: FlashDriveStorageService = new FlashDriveStorageService();
+// Export the appropriate storage service based on environment
+const createStorageService = () => {
+  // In cross-origin iframe (like Lovable preview), use localStorage
+  if (window.parent !== window) {
+    console.log('Using localStorage service (preview mode)');
+    return new LocalStorageService();
+  }
+  
+  // In normal browser context, use flash drive service
+  console.log('Using flash drive service (normal mode)');
+  return new FlashDriveStorageService();
+};
 
-// Keep localStorage as fallback
-export const localStorageFallback: LocalStorageService = new LocalStorageService();
+export const storage = createStorageService();
+
+// Keep both services available for manual use
+export const flashDriveService = new FlashDriveStorageService();
+export const localStorageService = new LocalStorageService();
 
 // Helper to ensure flash drive is connected
 export const ensureFlashDriveAccess = async (): Promise<boolean> => {

@@ -16,12 +16,17 @@ class FlashDriveStorage implements FlashDriveAPI {
   private directoryHandle: FileSystemDirectoryHandle | null = null;
   
   get isSupported(): boolean {
-    return 'showDirectoryPicker' in window;
+    // Check if the API exists and we're not in a cross-origin frame
+    return 'showDirectoryPicker' in window && window.parent === window;
   }
 
   async requestAccess(): Promise<FileSystemDirectoryHandle | null> {
     if (!this.isSupported) {
-      toast.error('Flash drive access not supported in this browser');
+      if (window.parent !== window) {
+        toast.error('Flash drive access not available in preview mode. Please open in a new tab.');
+      } else {
+        toast.error('Flash drive access not supported in this browser');
+      }
       return null;
     }
 
@@ -37,7 +42,9 @@ class FlashDriveStorage implements FlashDriveAPI {
       return this.directoryHandle;
     } catch (error) {
       console.error('Failed to access flash drive:', error);
-      if ((error as Error).name !== 'AbortError') {
+      if ((error as Error).name === 'SecurityError') {
+        toast.error('Flash drive access blocked. Please open in a new tab or use Chrome/Edge.');
+      } else if ((error as Error).name !== 'AbortError') {
         toast.error('Failed to access flash drive');
       }
       return null;
