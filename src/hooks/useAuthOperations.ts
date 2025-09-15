@@ -53,49 +53,90 @@ export const useAuthOperations = () => {
 
   const createAccount = async (pin: string) => {
     try {
+      console.log('Starting account creation with PIN length:', pin.length);
+      
       if (!pin || pin.length < 6) {
         toast.error('PIN must be at least 6 characters long');
         throw new Error('Invalid PIN');
       }
 
       // Ensure flash drive access before creating account
+      console.log('Checking flash drive access...');
       const hasAccess = await ensureFlashDriveAccess();
       if (!hasAccess) {
+        console.error('Flash drive access denied');
         toast.error('Flash drive access required to create wallet');
         throw new Error('Flash drive access required');
       }
+      console.log('Flash drive access confirmed');
 
       const userId = crypto.randomUUID();
+      console.log('Generated user ID:', userId);
       
-      const [ethWallet, tronWallet, btcWallet, solWallet] = await Promise.all([
-        generateWallet('ETH'),
-        generateWallet('TRON'),
-        generateWallet('BTC'),
-        generateWallet('SOL')
-      ]);
+      console.log('Generating wallets for all networks...');
+      const wallets = [];
+      
+      try {
+        const ethWallet = await generateWallet('ETH');
+        console.log('ETH wallet generated successfully');
+        wallets.push(ethWallet);
+      } catch (error) {
+        console.error('Failed to generate ETH wallet:', error);
+        throw new Error('Failed to generate ETH wallet');
+      }
+
+      try {
+        const btcWallet = await generateWallet('BTC');
+        console.log('BTC wallet generated successfully');
+        wallets.push(btcWallet);
+      } catch (error) {
+        console.error('Failed to generate BTC wallet:', error);
+        throw new Error('Failed to generate BTC wallet');
+      }
+
+      try {
+        const solWallet = await generateWallet('SOL');
+        console.log('SOL wallet generated successfully');
+        wallets.push(solWallet);
+      } catch (error) {
+        console.error('Failed to generate SOL wallet:', error);
+        throw new Error('Failed to generate SOL wallet');
+      }
+
+      try {
+        const tronWallet = await generateWallet('TRON');
+        console.log('TRON wallet generated successfully');
+        wallets.push(tronWallet);
+      } catch (error) {
+        console.error('Failed to generate TRON wallet:', error);
+        throw new Error('Failed to generate TRON wallet');
+      }
 
       const newUser: User = {
         id: userId,
         pin,
-        wallets: [ethWallet, tronWallet, btcWallet, solWallet],
+        wallets,
         transactions: [],
       };
 
+      console.log('Setting user in context...');
       setUser(newUser);
       
       // Save immediately to flash drive
+      console.log('Saving user data to flash drive...');
       const saved = await storage.saveUserToFlashDrive();
       if (!saved) {
+        console.error('Failed to save user data to flash drive');
         toast.error('Failed to save wallet to flash drive');
         throw new Error('Failed to save to flash drive');
       }
       
-      console.log('New account created and saved to flash drive:', newUser);
+      console.log('Account creation completed successfully');
       toast.success('Account created and saved to flash drive!');
       navigate('/wallet-dashboard');
     } catch (error) {
       console.error('Account creation error:', error);
-      toast.error('Failed to create account. Please try again.');
+      toast.error(`Failed to create account: ${error.message}`);
       throw error;
     }
   };

@@ -116,13 +116,13 @@ class LocalStorageService implements StorageService {
     }
   }
 
+  private cachedUser: User | null = null;
+
   async saveUserToFlashDrive(): Promise<boolean> {
     // Fallback to localStorage
     if (!this.cachedUser) return false;
     return this.setUser(this.cachedUser);
   }
-
-  private cachedUser: User | null = null;
 
   removeUser(): boolean {
     try {
