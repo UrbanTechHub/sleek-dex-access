@@ -69,13 +69,13 @@ const FlashDriveStatus = ({ onConnected, showConnectButton = true }: FlashDriveS
   }
 
   return (
-    <Card className={`border ${isConnected ? 'border-green-500 bg-green-50' : 'border-orange-500 bg-orange-50'}`}>
+    <Card className={`${isConnected ? 'border-green-500/60 bg-green-500/10' : 'border-orange-500/60 bg-orange-500/10'}`}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <UsbIcon className={`h-5 w-5 ${isConnected ? 'text-green-600' : 'text-orange-600'}`} />
             <div>
-              <p className={`font-medium ${isConnected ? 'text-green-800' : 'text-orange-800'}`}>
+              <p className={`font-medium ${isConnected ? 'text-green-700 dark:text-green-400' : 'text-orange-700 dark:text-orange-400'}`}>
                 Flash Drive {isConnected ? 'Connected' : 'Not Connected'}
               </p>
               <p className="text-sm text-muted-foreground">
